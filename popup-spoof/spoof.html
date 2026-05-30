@@ -48,8 +48,12 @@ https://www.google.com/search?q=what+is+claude@evil.com/[pad]#search?q=what+is+c
 </pre>
 
 <p class="info">
-  <b>Test:</b> Tap each button → popup fires after delay → Chrome blocks it.<br>
-  Check the popup blocker UI — do both URLs look the same?
+  <b>⚠️ If popups open directly (not blocked):</b><br>
+  Chrome has allowed popups for this site. Use <b>Incognito Tab</b> or:<br>
+  Settings → Site settings → Pop-ups and redirects → remove this site from allowlist.
+  <br><br>
+  <b>Test:</b> Page auto-fires 2 popups on load → both blocked.<br>
+  Tap popup blocked notification → compare both URLs.
 </p>
 
 <script src="spoof.js"></script>
