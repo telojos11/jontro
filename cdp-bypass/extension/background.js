@@ -1,5 +1,6 @@
-// CDP Bypass Background — minimal version
-try {
+// CDP Bypass Background
+// Icon click → attach debugger + inject window.cdp into MAIN world
+// Uses scripting.executeScript to bypass CSP restrictions
 
 const sessions = new Map();
 
@@ -10,18 +11,44 @@ chrome.action.onClicked.addListener(async (tab) => {
       sessions.delete(tab.id);
       return;
     }
+
+    // 1. Attach debugger
     await chrome.debugger.attach({ tabId: tab.id }, '1.3');
     sessions.set(tab.id, true);
-    console.log('[CDP] attached tab', tab.id);
+
+    // 2. Inject window.cdp into page MAIN world
+    // Uses scripting API → bypasses page CSP
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      world: 'MAIN',
+      func: () => {
+        if (window.cdp) return;
+        window.cdp = {
+          onmessage: null,
+          send(raw) {
+            window.postMessage({ c: 1, d: raw }, '*');
+          }
+        };
+        window.addEventListener('message', function(e) {
+          if (e.data && e.data.c === 2 && window.cdp && window.cdp.onmessage) {
+            window.cdp.onmessage(e.data.d);
+          }
+        });
+        console.log('[CDP Bypass] window.cdp injected');
+      }
+    });
+
+    console.log('[CDP Bypass] Injected into tab', tab.id);
   } catch (e) {
-    console.error('[CDP]', e.message);
+    console.error('[CDP Bypass]', e.message);
   }
 });
 
+// Relay: bridge → CDP
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.cmd !== 's') return false;
   const tabId = sender.tab ? sender.tab.id : null;
-  if (!tabId) { sendResponse({data:'{}'}); return true; }
+  if (!tabId) { sendResponse({ data: '{}' }); return true; }
 
   (async () => {
     try {
@@ -39,6 +66,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return true;
 });
 
+// Forward CDP events
 chrome.debugger.onEvent.addListener((source, method, params) => {
   chrome.tabs.sendMessage(source.tabId, {
     cmd: 'e',
@@ -47,5 +75,3 @@ chrome.debugger.onEvent.addListener((source, method, params) => {
 });
 
 chrome.debugger.onDetach.addListener((source) => { sessions.delete(source.tabId); });
-
-} catch (_) {}
