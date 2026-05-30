@@ -16,26 +16,24 @@ chrome.action.onClicked.addListener(async (tab) => {
     await chrome.debugger.attach({ tabId: tab.id }, '1.3');
     sessions.set(tab.id, true);
 
-    // 2. Inject window.cdp into page MAIN world
-    // Uses scripting API → bypasses page CSP
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      world: 'MAIN',
-      func: () => {
-        if (window.cdp) return;
-        window.cdp = {
-          onmessage: null,
-          send(raw) {
-            window.postMessage({ c: 1, d: raw }, '*');
-          }
-        };
-        window.addEventListener('message', function(e) {
-          if (e.data && e.data.c === 2 && window.cdp && window.cdp.onmessage) {
-            window.cdp.onmessage(e.data.d);
-          }
-        });
-        console.log('[CDP Bypass] window.cdp injected');
-      }
+    // 2. Inject window.cdp via CDP Runtime.evaluate
+    // CDP bypasses page CSP — more reliable than scripting API
+    await chrome.debugger.sendCommand({ tabId: tab.id }, 'Runtime.evaluate', {
+      expression: `
+        (function() {
+          if (window.cdp) return;
+          window.cdp = {
+            onmessage: null,
+            send: function(raw) { window.postMessage({ c: 1, d: raw }, '*'); }
+          };
+          window.addEventListener('message', function(e) {
+            if (e.data && e.data.c === 2 && window.cdp && window.cdp.onmessage) {
+              window.cdp.onmessage(e.data.d);
+            }
+          });
+          console.log('[CDP Bypass] window.cdp injected via CDP');
+        })();
+      `
     });
 
     console.log('[CDP Bypass] Injected into tab', tab.id);
