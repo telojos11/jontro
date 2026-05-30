@@ -1,103 +1,67 @@
-// CDP Bypass via Runtime.addBinding
-// No content script, no postMessage, no externally_connectable needed.
-// Uses CDP's own binding mechanism to create window.cdp bridge.
+// CDP Bypass Background
+// Icon click → attach debugger → bridge relays page CDP commands
+// Bypasses exposeDevToolsProtocol fix (never calls that API)
 
 const sessions = new Map();
 
+// Extension icon click → attach debugger to current tab
 chrome.action.onClicked.addListener(async (tab) => {
   try {
-    const tabId = tab.id;
+    if (sessions.has(tab.id)) {
+      // Already attached — detach
+      await chrome.debugger.detach({ tabId: tab.id });
+      sessions.delete(tab.id);
+      console.log('[CDP BG] Detached from tab', tab.id);
+      return;
+    }
 
-    // 1. Attach debugger
-    await chrome.debugger.attach({ tabId }, '1.3');
-    sessions.set(tabId, { attached: true });
-
-    // 2. Add CDP binding — creates window.__cdpBridge(data) in page
-    await chrome.debugger.sendCommand({ tabId }, 'Runtime.addBinding', {
-      name: '__cdpBridge'
-    });
-
-    // 3. Inject window.cdp via Runtime.evaluate
-    await chrome.debugger.sendCommand({ tabId }, 'Runtime.evaluate', {
-      expression: `
-        (function() {
-          if (window.cdp) return;
-
-          window.cdp = {
-            onmessage: null,
-
-            send(raw) {
-              // Calls the CDP binding — goes straight to extension
-              window.__cdpBridge(raw);
-            }
-          };
-
-          // Extension will deliver results via this function
-          window.__cdpDeliver = function(response) {
-            if (window.cdp && window.cdp.onmessage) {
-              window.cdp.onmessage(response);
-            }
-          };
-
-          console.log('[CDP Bypass] window.cdp ready');
-        })();
-      `
-    });
-
-    console.log('[CDP Bypass] Injected window.cdp into tab', tabId);
+    await chrome.debugger.attach({ tabId: tab.id }, '1.3');
+    sessions.set(tab.id, { attached: true });
+    console.log('[CDP BG] Attached to tab', tab.id);
   } catch (e) {
-    console.error('[CDP Bypass] Error:', e.message);
-    try { await chrome.debugger.detach({ tabId: tab.id }); } catch (_) {}
-    sessions.delete(tab.id);
+    console.error('[CDP BG] Attach error:', e.message);
   }
 });
 
-// Handle binding calls: page → __cdpBridge(data) → this handler
-chrome.debugger.onEvent.addListener(async (source, method, params) => {
-  if (method !== 'Runtime.bindingCalled' || params.name !== '__cdpBridge') return;
+// Relay CDP commands from bridge content script → real CDP
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.cmd !== 'cdpSend') return false;
 
-  const tabId = source.tabId;
-  if (!sessions.has(tabId)) return;
+  const tabId = sender.tab ? sender.tab.id : null;
+  if (!tabId) {
+    sendResponse({ data: JSON.stringify({ error: { message: 'No tab' } }) });
+    return true;
+  }
 
-  try {
-    const msg = JSON.parse(params.payload);
-
-    // Execute CDP command on behalf of the page
-    const result = await chrome.debugger.sendCommand(
-      { tabId },
-      msg.method,
-      msg.params || {}
-    );
-
-    // Deliver result back to page via Runtime.evaluate
-    const response = JSON.stringify({ id: msg.id, result });
-    await chrome.debugger.sendCommand({ tabId }, 'Runtime.evaluate', {
-      expression: `window.__cdpDeliver(${JSON.stringify(response)})`
-    });
-  } catch (e) {
-    // Deliver error back to page
+  // Auto-attach if needed
+  (async () => {
     try {
-      const msg = JSON.parse(params.payload);
-      const errResp = JSON.stringify({ id: msg.id, error: { message: e.message } });
-      await chrome.debugger.sendCommand({ tabId }, 'Runtime.evaluate', {
-        expression: `window.__cdpDeliver(${JSON.stringify(errResp)})`
-      });
-    } catch (_) {}
-  }
+      if (!sessions.has(tabId)) {
+        await chrome.debugger.attach({ tabId }, '1.3');
+        sessions.set(tabId, { attached: true });
+      }
+
+      const parsed = JSON.parse(msg.data);
+      const result = await chrome.debugger.sendCommand(
+        { tabId },
+        parsed.method,
+        parsed.params || {}
+      );
+      sendResponse({ data: JSON.stringify({ id: parsed.id, result }) });
+    } catch (e) {
+      sendResponse({ data: JSON.stringify({ id: msg.id || 0, error: { message: e.message } }) });
+    }
+  })();
+
+  return true; // async
 });
 
-// Forward protocol events (Target.receivedMessageFromTarget, etc.)
-chrome.debugger.onEvent.addListener(async (source, method, params) => {
-  if (method === 'Runtime.bindingCalled') return; // handled above
-  if (!sessions.has(source.tabId)) return;
-
-  // Forward events to page
-  const event = JSON.stringify({ method, params });
-  try {
-    await chrome.debugger.sendCommand({ tabId: source.tabId }, 'Runtime.evaluate', {
-      expression: `window.__cdpDeliver(${JSON.stringify(event)})`
-    });
-  } catch (_) {}
+// Forward CDP events to bridge → page
+chrome.debugger.onEvent.addListener((source, method, params) => {
+  chrome.tabs.sendMessage(source.tabId, {
+    cmd: 'cdpEvent',
+    data: JSON.stringify({ method, params })
+  }).catch(() => {});
 });
 
 chrome.debugger.onDetach.addListener((source) => {

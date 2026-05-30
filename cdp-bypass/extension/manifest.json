@@ -2,8 +2,13 @@
   "manifest_version": 3,
   "name": "CDP Bypass PoC",
   "version": "1.0",
-  "permissions": ["debugger", "activeTab"],
+  "permissions": ["debugger", "scripting"],
   "host_permissions": ["<all_urls>"],
   "background": { "service_worker": "background.js" },
-  "action": { "default_title": "CDP Bypass" }
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["bridge.js"],
+    "run_at": "document_start"
+  }],
+  "action": { "default_title": "Inject CDP" }
 }
