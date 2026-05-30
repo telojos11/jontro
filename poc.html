@@ -7,8 +7,8 @@ body { font: 13px/1.6 monospace; background: #111; color: #999; padding: 24px }
 .data { border-left: 2px solid #a80; padding: 6px 14px; margin: 4px 0 4px 12px;
   color: #ca5; background: #1a1400; white-space: pre-wrap; word-break: break-all }
 </style></head><body>
-<b>CDP Authorization Bypass — window.cdp via content script bridge</b><br>
-<small style="color:#555">browser-level CDP from page JS bypassing exposeDevToolsProtocol fix</small>
+<b>CDP Authorization Bypass — window.cdp via Runtime.evaluate</b><br>
+<small style="color:#555">browser-level CDP from page JS without exposeDevToolsProtocol</small>
 <p id="wait">Click the extension icon on this tab to inject CDP bridge</p>
 <div id="out"></div>
 <script>
