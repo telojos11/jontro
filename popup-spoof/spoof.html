@@ -6,10 +6,11 @@
 <title>Popup URL Spoof — Android Chrome</title>
 <style>
   body { font-family: Arial, sans-serif; background: #fff; padding: 40px 20px; text-align: center; }
-  h2 { color: #333; margin-bottom: 8px; }
+  h2 { color: #333; margin-bottom: 6px; }
   .badge { display: inline-block; padding: 3px 10px; border-radius: 3px; font-size: 11px; background: #fee2e2; color: #dc2626; margin-bottom: 16px; }
+  #countdown { font-size: 15px; color: #4285f4; margin: 12px 0; font-weight: 500; }
   button {
-    padding: 14px 24px; margin: 8px; font-size: 14px; border: 1px solid #dadce0;
+    padding: 14px 24px; margin: 6px; font-size: 14px; border: 1px solid #dadce0;
     border-radius: 24px; cursor: pointer; background: #fff;
   }
   button.primary { background: #4285f4; color: #fff; border: none; }
@@ -24,36 +25,16 @@
 <h2>Popup URL Spoof</h2>
 <span class="badge">Chrome Android — Popup Blocker Bypass</span>
 
-<p style="color:#666;font-size:13px;">Tap a button — popup fires after delay (non-user-gesture) → blocked → check popup UI.</p>
+<div id="countdown">Loading...</div>
 
-<button id="btnLegit">1. Legitimate Google Search</button>
-<button id="btnSpoof" class="primary">2. Spoofed (should look identical)</button>
-
-<hr style="max-width:400px;margin:20px auto;border:none;border-top:1px solid #eee;">
-
-<pre>
-Legit URL:
-https://www.google.com/search?q=what+is+claude
-
-Spoofed URL:
-https://www.google.com/search?q=what+is+claude@evil.com/[pad]#search?q=what+is+claude
-
-┌─────────────────────────────────────┐
-│ Android popup dialog (~45 chars)    │
-│                                     │
-│ www.google.com/...search?q=what...  │  ← Both URLs show THIS
-│                                     │
-│ @evil.com hidden in "..." zone      │
-└─────────────────────────────────────┘
-</pre>
+<button id="btnNow">Open Popups Now (user gesture — opens directly)</button>
 
 <p class="info">
-  <b>⚠️ If popups open directly (not blocked):</b><br>
-  Chrome has allowed popups for this site. Use <b>Incognito Tab</b> or:<br>
-  Settings → Site settings → Pop-ups and redirects → remove this site from allowlist.
+  <b>Auto-trigger:</b> After countdown, 2 popups fire outside user gesture → <b>blocked</b>.<br>
+  Look for popup blocked notification at bottom → tap it → compare URLs.
   <br><br>
-  <b>Test:</b> Page auto-fires 2 popups on load → both blocked.<br>
-  Tap popup blocked notification → compare both URLs.
+  Legit URL: <code>google.com/search?q=what+is+claude</code><br>
+  Spoof URL: <code>google.com@evil.com/example-thing#search?q=what+is+claude</code>
 </p>
 
 <script src="spoof.js"></script>
