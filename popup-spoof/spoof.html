@@ -3,38 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Popup URL Spoof — Android Chrome</title>
+<title>Popup URL Spoof — Chrome Android</title>
 <style>
-  body { font-family: Arial, sans-serif; background: #fff; padding: 40px 20px; text-align: center; }
-  h2 { color: #333; margin-bottom: 6px; }
-  .badge { display: inline-block; padding: 3px 10px; border-radius: 3px; font-size: 11px; background: #fee2e2; color: #dc2626; margin-bottom: 16px; }
-  #countdown { font-size: 15px; color: #4285f4; margin: 12px 0; font-weight: 500; }
+  body { font-family: Arial, sans-serif; background: #fff; padding: 16px; }
+  h2 { color: #333; font-size: 16px; margin-bottom: 4px; text-align: center; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 10px; background: #fee2e2; color: #dc2626; }
+
+  #display { margin: 16px 0; }
+  .url-box {
+    border: 1px solid #dadce0; border-radius: 8px; padding: 12px;
+    margin: 10px 0; text-align: center;
+  }
+  .url-box.legit { border-color: #34a853; background: #f0fff4; }
+  .url-box.spoof { border-color: #ea4335; background: #fff0f0; }
+  .url-box .label { font-size: 10px; font-weight: 600; color: #666; margin-bottom: 6px; text-transform: uppercase; }
+  .url-box .url-text {
+    font-family: monospace; font-size: 13px; color: #202124;
+    background: #fff; padding: 8px; border-radius: 4px;
+    word-break: break-all; border: 1px solid #e8eaed;
+  }
+  .url-box .full { font-size: 10px; color: #888; margin-top: 6px; word-break: break-all; }
+
+  .verdict {
+    text-align: center; font-size: 15px; font-weight: 700;
+    padding: 12px; border-radius: 8px; margin-top: 8px;
+  }
+
+  .explain { font-size: 11px; color: #666; margin-top: 14px; line-height: 1.5; text-align: center; }
+
   button {
-    padding: 14px 24px; margin: 6px; font-size: 14px; border: 1px solid #dadce0;
-    border-radius: 24px; cursor: pointer; background: #fff;
+    display: block; width: 100%; padding: 14px; margin: 6px 0;
+    font-size: 14px; border: 1px solid #dadce0; border-radius: 24px;
+    cursor: pointer; background: #fff;
   }
   button.primary { background: #4285f4; color: #fff; border: none; }
-  button:active { opacity: .7; }
-  pre { background: #f5f5f5; padding: 12px; border-radius: 8px; font-size: 11px; text-align: left;
-        max-width: 500px; margin: 16px auto; overflow-x: auto; }
-  .info { color: #888; font-size: 12px; margin-top: 16px; line-height: 1.6; }
 </style>
 </head>
 <body>
 
 <h2>Popup URL Spoof</h2>
-<span class="badge">Chrome Android — Popup Blocker Bypass</span>
+<p style="text-align:center;"><span class="badge">Chrome Android — Popup Blocker Bypass</span></p>
 
-<div id="countdown">Loading...</div>
+<div id="display"></div>
 
-<button id="btnNow">Open Popups Now (user gesture — opens directly)</button>
-
-<p class="info">
-  <b>Auto-trigger:</b> After countdown, 2 popups fire outside user gesture → <b>blocked</b>.<br>
-  Look for popup blocked notification at bottom → tap it → compare URLs.
+<div class="explain">
+  <b>How it works:</b> On Android Chrome, the popup blocker dialog shows
+  URLs truncated to ~45 characters. The <code>@evil.com</code> falls in the
+  <b>"..." truncation zone</b>, making the spoofed URL look identical
+  to the legitimate Google URL.
   <br><br>
-  Legit URL: <code>google.com/search?q=what+is+claude</code><br>
-  Spoof URL: <code>google.com@evil.com/example-thing#search?q=what+is+claude</code>
+  Both URLs show: <code style="background:#f5f5f5;padding:2px 6px;border-radius:3px;">www.google.com/...search?q=what+is+claude</code>
+</div>
+
+<button id="btnOpen" class="primary">Open Both Popups (for reference)</button>
+<p class="explain" style="font-size:10px;color:#aaa;">
+  The <b>visual comparison above</b> is the POC — it shows what the Android popup blocker displays.<br>
+  The button opens actual popups for reference only.
 </p>
 
 <script src="spoof.js"></script>
